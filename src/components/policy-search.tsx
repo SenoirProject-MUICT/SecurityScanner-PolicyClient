@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react'
+import { useCallback, useEffect, useState, type ComponentType } from 'react'
 import { Search } from 'lucide-react'
 
 type SearchDialogProps = { open: boolean; onOpenChange: (open: boolean) => void }
@@ -8,14 +8,14 @@ export function PolicySearch() {
   const [open, setOpen] = useState(false)
   const [SearchDialog, setSearchDialog] = useState<SearchDialogComponent | null>(null)
 
-  function loadDialog() {
+  const loadDialog = useCallback(function loadDialog() {
     void import('./policy-search-dialog').then(({ PolicySearchDialog }) => setSearchDialog(() => PolicySearchDialog))
-  }
+  }, [])
 
-  function showSearch() {
+  const showSearch = useCallback(function showSearch() {
     setOpen(true)
     loadDialog()
-  }
+  }, [loadDialog])
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -27,7 +27,7 @@ export function PolicySearch() {
     }
     window.addEventListener('keydown', handleShortcut)
     return () => window.removeEventListener('keydown', handleShortcut)
-  }, [open])
+  }, [open,showSearch])
 
   return <>
     <button type="button" className="policy-search-trigger" onClick={showSearch} onPointerEnter={loadDialog} onFocus={loadDialog} aria-label="Search policies">

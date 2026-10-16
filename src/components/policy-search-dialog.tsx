@@ -18,10 +18,12 @@ export function PolicySearchDialog({ open, onOpenChange }: { open: boolean; onOp
   const transition = { duration, ease: [0.23, 1, 0.32, 1] as const }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!policies.some((policy) => policy.id === activePolicyId)) setActivePolicyId(policies[0]?.id ?? '')
   }, [activePolicyId, policies])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setDialogOpen(true)
   }, [open])
 

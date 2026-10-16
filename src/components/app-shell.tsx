@@ -66,6 +66,7 @@ function NavigationProgress({ state }: { state: 'idle' | 'loading' | 'submitting
   useEffect(() => {
     if (pending) {
       window.clearTimeout(hideTimer.current)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true)
       return
     }
