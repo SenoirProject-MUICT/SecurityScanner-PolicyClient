@@ -1,0 +1,1 @@
+export { generateMockPolicy } from './mock'
