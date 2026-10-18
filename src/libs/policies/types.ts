@@ -18,8 +18,6 @@ export type PolicyActivity = { id: string; policyId: string; policyName: string;
 export type PolicyFields = Pick<Policy, 'name' | 'description' | 'labels' | 'status' | 'effectiveFrom' | 'effectiveUntil'>
 export type PolicyInput = PolicyFields & Pick<Policy, 'ownerId' | 'createdBy'>
 export type PolicyDraftInput = PolicyFields
-export type DataMode = 'mock' | 'supabase'
-
 export type PolicyRepository = {
   list(): Promise<Policy[]>
   create(input: PolicyInput): Promise<Policy>
