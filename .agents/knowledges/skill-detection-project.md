@@ -82,7 +82,7 @@ Routes:
 
 ## Mock mode
 
-Mock mode is the default (`VITE_DATA_MODE=mock`) and is also the fallback if Supabase mode is requested without both required credentials. It uses the browser's `localStorage`; data is local to that browser and is not synchronized to Supabase or other devices. The mock repositories simulate about 500 ms loading latency using [src/libs/mock-delay.ts](../../src/libs/mock-delay.ts).
+Mock mode is selected explicitly with `VITE_DATA_MODE=mock` and is also the fallback when production mode is requested without both required credentials. If `VITE_DATA_MODE` is omitted, production is requested. Mock mode uses the browser's `localStorage`; data is local to that browser and is not synchronized to Supabase or other devices. The mock repositories simulate about 500 ms loading latency using [src/libs/mock-delay.ts](../../src/libs/mock-delay.ts).
 
 Storage keys currently used:
 
@@ -95,12 +95,12 @@ Mock auth accepts a non-empty email and a password of at least six characters at
 
 ## Supabase / production mode
 
-Mode is chosen in [src/libs/policies/index.ts](../../src/libs/policies/index.ts). `VITE_DATA_MODE=supabase` only activates Supabase if both URL and publishable key are non-empty; otherwise mode falls back to mock. The visible connection indicator is based on the resolved mode/config in the app shell/settings page.
+Mode is resolved by [src/libs/runtime-mode.ts](../../src/libs/runtime-mode.ts) into the `RuntimeMode` enum and held in [src/stores/runtime-mode-store.ts](../../src/stores/runtime-mode-store.ts). UI components subscribe to its `isProd` value; domain facades read the same Zustand state when selecting mock or Supabase adapters. `VITE_DATA_MODE=production` (legacy `supabase` is also accepted) activates Supabase only if both URL and publishable key are non-empty; otherwise it falls back to mock.
 
 Provide these values in a local, ignored `.env` file (restart Vite after changes):
 
 ```env
-VITE_DATA_MODE=supabase
+VITE_DATA_MODE=production
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<supabase-publishable-key>
 ```
@@ -114,6 +114,10 @@ Before using production mode:
 3. Set the URL and publishable key above, then restart the Vite server.
 
 If the credentials exist but database requests fail, the app should surface the real error rather than silently replacing production data with mock data. Mock and Supabase datasets remain separate; switching modes does not migrate or copy records.
+
+## Planned review platform features
+
+The proposed repository review, reviewer management, Git provider, vulnerability classification, and policy approval work is tracked separately in [review-platform-roadmap.md](review-platform-roadmap.md). That document identifies current implementation status, dependencies, suggested sequencing, and product decisions.
 
 ## Working conventions for agents
 

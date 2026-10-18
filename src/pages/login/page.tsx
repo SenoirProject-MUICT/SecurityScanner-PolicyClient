@@ -7,13 +7,14 @@ import { ArrowRight, Check, Fingerprint, LockKeyhole } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/stores/auth-store'
-import { authMode } from '@/libs/auth'
+import { useRuntimeModeStore } from '@/stores/runtime-mode-store'
 
 const schema = z.object({ name: z.string().optional(), email: z.email('Enter a valid email address.'), password: z.string().min(8, 'Use at least 8 characters.') })
 type Values = z.infer<typeof schema>
 
 export function LoginPage() {
   const { user, signIn, signUp } = useAuth()
+  const isProd = useRuntimeModeStore((state) => state.isProd)
   const navigate = useNavigate()
   const location = useLocation()
   const [isCreating, setIsCreating] = useState(false)
@@ -54,8 +55,8 @@ export function LoginPage() {
         <Button type="submit" className="login-submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? 'One moment…' : isCreating ? 'Create account' : 'Sign in'}<ArrowRight size={15} /></Button>
       </form>
       <div className="login-switch">{isCreating ? 'Already have an account?' : 'New to Policy Desk?'} <button type="button" onClick={() => { setIsCreating((value) => !value); setError(''); setMessage('') }}>{isCreating ? 'Sign in' : 'Create an account'}</button></div>
-      {authMode === 'mock' && <><div className="login-divider"><span>OR</span></div><Button variant="outline" className="demo-button" onClick={() => void continueAsDemo()}><Fingerprint size={15} /> Continue as demo user</Button><p className="demo-hint"><LockKeyhole size={12} /> Mock sign-in stays on this device. Any valid email works.</p></>}
-      {authMode === 'supabase' && <p className="demo-hint"><LockKeyhole size={12} /> Secured by your Supabase Auth project.</p>}
+      {!isProd && <><div className="login-divider"><span>OR</span></div><Button variant="outline" className="demo-button" onClick={() => void continueAsDemo()}><Fingerprint size={15} /> Continue as demo user</Button><p className="demo-hint"><LockKeyhole size={12} /> Mock sign-in stays on this device. Any valid email works.</p></>}
+      {isProd && <p className="demo-hint"><LockKeyhole size={12} /> Secured by your Supabase Auth project.</p>}
     </div><span className="login-legal">By continuing, you agree to use generated policy drafts as a starting point for review.</span></section>
   </main>
 }

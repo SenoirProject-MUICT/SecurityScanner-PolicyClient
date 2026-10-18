@@ -9,19 +9,19 @@ pnpm install
 pnpm dev
 ```
 
-The app starts in mock mode by default. It stores policy and label records in this browser's local storage and includes sample policies and labels.
+If `VITE_DATA_MODE` is omitted, the app requests production mode. Production mode requires both Supabase credentials; if either is missing, it falls back to mock mode. Set `VITE_DATA_MODE=mock` to explicitly use local sample data and browser storage.
 
 ## Connect Supabase
 
 The root `.env` file is present with empty URL and key values. It is ignored by Git. Copy the variable names from `.env.example` if needed, then fill in your Supabase project URL and **publishable** key:
 
 ```env
-VITE_DATA_MODE=supabase
+VITE_DATA_MODE=production
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-Restart the Vite dev server after changing `.env`. The header reports the active data mode; the connection panel separately shows whether the URL and publishable key are present. If Supabase is selected without both values, the app falls back to mock mode. If the values are present but the database request fails, the app shows the Supabase error instead of silently switching data sources.
+Restart the Vite dev server after changing `.env`. The app resolves `VITE_DATA_MODE` to the `RuntimeMode` enum and exposes the resolved `isProd` value through the Zustand runtime-mode store. Production mode requires both Supabase values; without them, the app safely falls back to mock mode. The legacy value `supabase` remains accepted. If the credentials are present but a database request fails, the app surfaces that error instead of silently switching data sources.
 
 The proposed schema in [`supabase/schema.sql`](supabase/schema.sql) defines the `public.policies` and `public.policy_labels` tables with owner-scoped Row Level Security. Review it against your project's existing schema before applying it. Existing installations may retain a legacy `skills` column; the client no longer reads or writes that column. Do not put a Supabase secret or service-role key in a `VITE_` variable.
 

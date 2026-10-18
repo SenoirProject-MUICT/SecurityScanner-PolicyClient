@@ -1,5 +1,4 @@
 export type AuthUser = { id: string; email: string; name: string }
-export type AuthMode = 'mock' | 'supabase'
 export type AuthService = {
   getCurrentUser(): Promise<AuthUser | null>
   signIn(email: string, password: string): Promise<AuthUser>
