@@ -4,7 +4,7 @@ import { supabaseLabelRepository } from './supabase'
 
 export type { LabelRepository, PolicyLabel } from './types'
 const repository = useRuntimeModeStore.getState().isProd ? supabaseLabelRepository : mockLabelRepository
-export const listLabels = repository.list
-export const createLabel = repository.create
-export const updateLabel = repository.update
-export const deleteLabel = repository.delete
+export const listLabels = (workspaceId: string) => repository.list(workspaceId)
+export const createLabel = (name: string, ownerId: string, createdBy: string, workspaceId: string) => repository.create(name, ownerId, createdBy, workspaceId)
+export const updateLabel = (id: string, name: string, workspaceId: string) => repository.update(id, name, workspaceId)
+export const deleteLabel = (id: string, workspaceId: string) => repository.delete(id, workspaceId)

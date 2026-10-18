@@ -4,7 +4,7 @@
 
 Policy Desk serves two valid needs: teams who only manage policies and teams who also review skill findings from Git repositories. Repository connection must be offered during first entry, but it is optional. A user must be able to use the complete policy-management experience without connecting GitHub or GitLab.
 
-This is a proposed experience; repository connection and review workflows are not implemented yet. See the [review platform roadmap](review-platform-roadmap.md) and [project context](skill-detection-project.md).
+**Workspace setup is implemented:** an authenticated user without a workspace chooses to create one or join with an admin-provided time-limited code. Repository connection and review workflows are not implemented yet; the optional repository-onboarding path below remains a proposal. See the [review platform roadmap](review-platform-roadmap.md) and [project context](skill-detection-project.md).
 
 ## Primary user story
 
@@ -13,7 +13,7 @@ This is a proposed experience; repository connection and review workflows are no
 ## First entry experience
 
 1. The user signs in or creates an account. The current auth UI is in [src/pages/login/page.tsx](../../src/pages/login/page.tsx); workspace protection and loading are handled by [src/app/router.tsx](../../src/app/router.tsx).
-2. If this is a new workspace with no policies and no completed onboarding, show a focused welcome/setup page before the normal dashboard. Returning users go directly to the dashboard.
+2. If the user has no workspace, [the workspace setup page](../../src/pages/workspace-setup/page.tsx) offers **Create a workspace** and **Join with a code**. Workspace creation is explicit; signup does not silently create a personal workspace. Users with a selected workspace continue to the app.
 3. Explain the two paths in plain language:
    - **Manage policies** — create, organize, schedule, and maintain policies. No repository connection required.
    - **Review repository changes** — connect GitHub or GitLab to import pull/merge requests and review detected skill findings.
@@ -35,11 +35,11 @@ As a workspace admin who wants MR review, I can choose a provider, authorize the
 
 - Repository connection is optional; skipping never blocks access to policy features.
 - The product explains what connecting a repo enables before asking for authorization.
-- The user's choice persists per workspace so onboarding does not repeat on every visit.
+- Workspace selection persists through the workspace store. Repository onboarding completion persistence is still to be implemented if/when that optional flow is built.
 - An admin can connect a repository later from workspace settings/integrations.
 - A repository connection failure does not prevent the user from using policies.
 - Do not display review queue as a broken/empty core dashboard for a policy-only workspace; surface review features only when a repository is connected or offer them as an optional setup card.
-- Workspace admin/member permissions govern who sees connection actions once RBAC is implemented.
+- Workspace admin/member permissions govern who sees connection actions; workspace roles and member management are implemented in code/mock mode, with production deployment pending.
 - Provider secrets stay server-side; the browser only receives connection status and safe repository metadata.
 
 ## Suggested onboarding states

@@ -8,7 +8,7 @@ Not implemented. There is no provider authorization flow, repository connection,
 
 - [Workspace roles and member management](review-platform-roles-plan.md), so repository connections and credentials can be administered safely.
 - A trusted server-side/edge-function boundary for provider OAuth, token handling, webhook verification, and API requests. The current frontend is a Vite browser app and must not hold provider secrets.
-- The repository feature depends on [Workspace roles and member management](review-platform-roles-plan.md), which is still planned. Repository connections should be workspace-owned and restricted to admins; members can use the review queue.
+- [Workspace roles and member management](review-platform-roles-plan.md) is implemented in application code and mock mode; its production migration and Edge Function deployment is still pending. Repository connections should be workspace-owned and restricted to admins; members can use the review queue.
 
 ## Goal and data flow
 
@@ -40,7 +40,7 @@ GitHub REST references: [List pull requests](https://docs.github.com/en/rest/pul
 - `merge_request_files`: merge request ID, provider file path, previous path for rename, status, additions, deletions, changes, patch (nullable), blob SHA (nullable). Unique key: `(merge_request_id, filename)`.
 - `provider_webhook_deliveries`: provider delivery ID, event/action, received/processed timestamps and outcome for replay protection and debugging.
 
-RLS should scope application-visible rows to the user's workspace. The webhook and sync functions must verify the workspace/repository mapping before privileged writes. Existing `supabase/schema.sql` is owner-scoped and does not yet have workspace membership tables, so establish the workspace/RBAC foundation before applying this schema. Provider credentials must never be readable through RLS.
+RLS should scope application-visible rows to the user's workspace. The webhook and sync functions must verify the workspace/repository mapping before privileged writes. Workspace membership and workspace-scoped policy schema are implemented in `supabase/schema.sql` and versioned migrations; deploy that foundation before repository tables. Provider credentials must never be readable through RLS.
 
 ## Files to add
 

@@ -14,6 +14,7 @@ const navigation = [
   { to: '/', label: 'Overview', end: true },
   { to: '/policies', label: 'Policies', end: false },
   { to: '/labels', label: 'Labels', end: true },
+  { to: '/team', label: 'Team', end: true },
   { to: '/assistant', label: 'Draft with AI', end: true },
 ]
 
@@ -31,8 +32,9 @@ function AppLayout() {
   const navigate = useNavigate()
   const isProd = useRuntimeModeStore((state) => state.isProd)
   useEffect(() => {
-    void usePolicyStore.getState().initialize()
-    void useLabelStore.getState().initialize()
+    void (async () => {
+      await Promise.all([usePolicyStore.getState().initialize(), useLabelStore.getState().initialize()])
+    })()
     function closeMenu(event: PointerEvent) { if (!profileMenuRef.current?.contains(event.target as Node)) profileMenuRef.current?.removeAttribute('open') }
     function closeOnEscape(event: KeyboardEvent) { if (event.key === 'Escape') profileMenuRef.current?.removeAttribute('open') }
     document.addEventListener('pointerdown', closeMenu)

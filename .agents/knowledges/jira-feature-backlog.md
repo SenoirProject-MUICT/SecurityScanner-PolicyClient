@@ -18,18 +18,18 @@ This backlog turns the proposed review-platform plans into individual Jira ticke
 | Email/password login and mock login | DONE (existing) | `src/libs/auth/`, `src/stores/auth-store.ts`, `src/pages/login/page.tsx` |
 | Mock and Supabase data mode | DONE (existing) | `src/libs/*/mock.ts`, `src/libs/*/supabase.ts`, `.env.example` |
 | Policy schedule and policy activity | DONE (existing) | `src/components/policy-schedule.tsx`, `src/pages/overview/page.tsx` |
-| First-run onboarding, workspace setup choice, onboarding completion persistence | Not present | `.agents/knowledges/first-entry-user-story.md` is a proposal only; no onboarding route/state exists |
-| Workspace member management, RBAC, repository links, review queue, vulnerability classifications, policy approval | Not present | Confirmed by `.agents/knowledges/review-platform-roadmap.md` and feature plan status sections |
+| Workspace creation/join setup and workspace selection | DONE (code/mock; production deployment pending) | `src/pages/workspace-setup/page.tsx`, `src/stores/workspace-store.ts`, `src/libs/workspaces/`, `supabase/functions/workspace-members/` |
+| Workspace roles and member management | DONE (code/mock; production deployment pending) | `src/pages/team/page.tsx`, `src/libs/workspaces/`, `supabase/schema.sql`, `supabase/migrations/`, `supabase/functions/workspace-members/`; see `.agents/knowledges/review-platform-roles-plan.md` |
+| Optional repository onboarding, repository links, review queue, vulnerability classifications, policy approval | Not implemented | Optional repository path is still proposed in `.agents/knowledges/first-entry-user-story.md`; see `.agents/knowledges/review-platform-roadmap.md` |
 
-The existing login system does not provide workspace membership or roles. Existing policy labels are not the vulnerability taxonomy needed for MR findings. The policy date schedule is not an MR review queue.
+Workspace membership and admin/member roles are implemented, while production migration/function deployment remains a manual setup task. Existing policy labels are not the vulnerability taxonomy needed for MR findings. The policy date schedule is not an MR review queue.
 
 ## Recommended delivery order
 
-1. **Workspace and roles** — provides the authorization and ownership boundary for all shared records.
-2. **First-run onboarding, policy-only path** — new users can reach the existing policy workspace without needing a provider connection.
-3. **GitHub connection and PR ingestion** — first provider; keep GitLab for later. Import PRs and changed files.
-4. **Onboarding repository path** — complete the optional connect/select/sync setup for teams that choose reviews.
-5. **Skill detection contract and finding classifications** — agree on the external analyzer contract, then build the review feedback capability.
+1. **DONE — Workspace creation/join and roles** — foundation is implemented in code/mock mode; deploy migrations and the Edge Function before production use.
+2. **GitHub connection and PR ingestion** — first provider; keep GitLab for later. Import PRs and changed files.
+3. **Optional repository onboarding** — complete the connect/select/sync setup for teams that choose reviews.
+4. **Skill detection contract and finding classifications** — agree on the external analyzer contract, then build the review feedback capability.
 6. **Review assignment, queue, and configurable due times** — reviewers are members assigned per PR, not a workspace role.
 7. **Policy approval workflow** — can proceed after roles; it is independent of repository ingestion and may run in parallel after the RBAC foundation.
 8. **Training data export** — later, separately reviewed and governed; recording classifications is not model fine-tuning.
@@ -110,13 +110,13 @@ Policy-only users must be able to use the product without connecting a repositor
 
 ### PD-ORG-1 — Define workspace and membership authorization model
 
-- **Status:** READY
+- **Status:** DONE (implemented/documented)
 - **Type:** Story / architecture
 - **Priority:** Highest; prerequisite for shared review platform
 - **Description:** Define workspace ownership, membership, initial workspace creation, and `admin` / `member` permissions. A reviewer is a member assigned to an individual PR, not a permanent role.
 - **Acceptance criteria:**
-  - Workspace and membership identifiers/relationships are documented, including whether the first release creates one workspace per account or supports multiple.
-  - Permissions matrix is agreed for policy editing, inviting members, repository management, assignments, MR review, and policy approval.
+  - Workspace and membership identifiers/relationships support multiple workspaces; users explicitly create or join one.
+  - Admin/member roles are implemented; reviewer remains an MR assignment rather than a permanent role.
   - New users cannot grant themselves admin privileges through public signup or client-side metadata.
   - Deny-by-default behavior is specified when membership cannot be resolved.
 - **Dependencies:** None.
@@ -124,7 +124,7 @@ Policy-only users must be able to use the product without connecting a repositor
 
 ### PD-ORG-2 — Add workspace membership schema and RLS
 
-- **Status:** READY
+- **Status:** DONE (code/schema; production migration deployment pending)
 - **Type:** Story
 - **Priority:** Highest
 - **Description:** Add workspace and membership persistence and enforce tenant boundaries for existing and upcoming records.
@@ -138,7 +138,7 @@ Policy-only users must be able to use the product without connecting a repositor
 
 ### PD-ORG-3 — Implement invitations and member administration
 
-- **Status:** READY
+- **Status:** DONE (code/mock; production Edge Function deployment pending)
 - **Type:** Story
 - **Priority:** High
 - **Description:** Let admins invite members, view membership, change roles, and deactivate/remove access.
@@ -151,7 +151,7 @@ Policy-only users must be able to use the product without connecting a repositor
 
 ### PD-ORG-4 — Add role-aware permission checks to the client and data operations
 
-- **Status:** READY
+- **Status:** DONE (code/mock; production Edge Function and migration deployment pending)
 - **Type:** Story / security
 - **Priority:** High
 - **Description:** Apply the agreed permission matrix consistently across UI, database operations, and Edge Functions.

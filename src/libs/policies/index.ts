@@ -10,10 +10,10 @@ export { getPolicyLifecycle, isPolicyEffective, toDateKey } from './status'
 const isProd = useRuntimeModeStore.getState().isProd
 const repository = isProd ? supabasePolicyRepository : mockPolicyRepository
 
-export const listPolicies = (): Promise<Policy[]> => repository.list()
+export const listPolicies = (workspaceId: string): Promise<Policy[]> => repository.list(workspaceId)
 export const createPolicy = (input: PolicyInput): Promise<Policy> => repository.create(input)
 export const updatePolicy = (id: string, input: PolicyInput): Promise<Policy> => repository.update(id, input)
-export const deletePolicy = (id: string): Promise<void> => repository.delete(id)
-export const setPolicyStatus = (id: string, status: import('./types').PolicyStatus): Promise<Policy> => repository.setStatus(id, status)
-export const listPolicyActivity = (): Promise<PolicyActivity[]> => isProd ? supabasePolicyRepository.listActivity() : mockPolicyRepository.listActivity()
-export const recordPolicyActivity = (policy: Pick<Policy, 'id' | 'name'>, type: PolicyActivityType): Promise<void> => isProd ? supabasePolicyRepository.recordActivity(policy, type) : mockPolicyRepository.recordActivity(policy, type)
+export const deletePolicy = (id: string, workspaceId: string): Promise<void> => repository.delete(id, workspaceId)
+export const setPolicyStatus = (id: string, status: import('./types').PolicyStatus, workspaceId: string): Promise<Policy> => repository.setStatus(id, status, workspaceId)
+export const listPolicyActivity = (workspaceId: string): Promise<PolicyActivity[]> => isProd ? supabasePolicyRepository.listActivity(workspaceId) : mockPolicyRepository.listActivity(workspaceId)
+export const recordPolicyActivity = (policy: Pick<Policy, 'id' | 'name' | 'workspaceId'>, type: PolicyActivityType, ownerId: string): Promise<void> => isProd ? supabasePolicyRepository.recordActivity(policy, type, ownerId) : mockPolicyRepository.recordActivity(policy, type, ownerId)
