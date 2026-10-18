@@ -51,13 +51,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   createWorkspace: async (name) => {
     set({ isMutating: true, error: '' })
     try { await createWorkspaceRequest(name); await get().initialize() }
-    catch (cause) { throw cause }
     finally { set({ isMutating: false }) }
   },
   joinWorkspace: async (code) => {
     set({ isMutating: true, error: '' })
     try { await joinWorkspaceRequest(code); await get().initialize() }
-    catch (cause) { throw cause }
     finally { set({ isMutating: false }) }
   },
   selectWorkspace: async (selectedWorkspaceId) => {

@@ -25,8 +25,8 @@ export function TeamPage() {
   const [email, setEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<WorkspaceRole>('member')
   const [removeTarget, setRemoveTarget] = useState<WorkspaceMember | null>(null)
-  const [joinCodes, setJoinCodes] = useState<WorkspaceJoinCode[]>([])
-  const [joinCodesLoading, setJoinCodesLoading] = useState(false)
+  const [joinCodeList, setJoinCodeList] = useState<{ workspaceId: string; codes: WorkspaceJoinCode[]; error: string }>({ workspaceId: '', codes: [], error: '' })
+  const [now, setNow] = useState(0)
   const [joinCodeOpen, setJoinCodeOpen] = useState(false)
   const [joinCodeExpiresIn, setJoinCodeExpiresIn] = useState(7)
   const [createdJoinCode, setCreatedJoinCode] = useState<CreatedWorkspaceJoinCode | null>(null)
@@ -36,19 +36,24 @@ export function TeamPage() {
 
   useEffect(() => {
     let active = true
-    setJoinCodeError('')
-    setJoinCodes([])
-    if (!selectedWorkspaceId || !canManage) {
-      setJoinCodesLoading(false)
-      return
-    }
-    setJoinCodesLoading(true)
+    if (!selectedWorkspaceId || !canManage) return
     void listWorkspaceJoinCodes(selectedWorkspaceId)
-      .then((codes) => { if (active) setJoinCodes(codes) })
-      .catch((cause) => { if (active) setJoinCodeError(message(cause)) })
-      .finally(() => { if (active) setJoinCodesLoading(false) })
+      .then((codes) => {
+        if (active) {
+          setJoinCodeList({ workspaceId: selectedWorkspaceId, codes, error: '' })
+          setNow(Date.now())
+        }
+      })
+      .catch((cause) => {
+        if (active) setJoinCodeList({ workspaceId: selectedWorkspaceId, codes: [], error: message(cause) })
+      })
     return () => { active = false }
   }, [selectedWorkspaceId, canManage])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   async function submitInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -91,7 +96,8 @@ export function TeamPage() {
     try {
       const created = await createWorkspaceJoinCode(selectedWorkspaceId, joinCodeExpiresIn)
       setCreatedJoinCode(created)
-      setJoinCodes((codes) => [created, ...codes])
+      setJoinCodeList((current) => ({ workspaceId: selectedWorkspaceId, codes: [created, ...(current.workspaceId === selectedWorkspaceId ? current.codes : [])], error: '' }))
+      setNow(Date.now())
     } catch (cause) { setJoinCodeError(message(cause)) }
     finally { setJoinCodeBusy(false) }
   }
@@ -107,7 +113,9 @@ export function TeamPage() {
     setJoinCodeBusy(true)
     try {
       await revokeWorkspaceJoinCode(selectedWorkspaceId, revokeTarget.id)
-      setJoinCodes((codes) => codes.map((code) => code.id === revokeTarget.id ? { ...code, revokedAt: new Date().toISOString() } : code))
+      const revokedAt = new Date().toISOString()
+      setJoinCodeList((current) => current.workspaceId === selectedWorkspaceId ? { ...current, codes: current.codes.map((code) => code.id === revokeTarget.id ? { ...code, revokedAt } : code) } : current)
+      setNow(Date.now())
       setRevokeTarget(null); toast.success('Join code revoked')
     } catch (cause) { setJoinCodeError(message(cause)); setRevokeTarget(null) }
     finally { setJoinCodeBusy(false) }
@@ -116,6 +124,9 @@ export function TeamPage() {
   const selectedWorkspace = workspaces.find((workspace) => workspace.id === selectedWorkspaceId)
   const activeCount = members.filter((member) => member.status === 'active').length
   const pendingCount = members.filter((member) => member.status === 'invited').length
+  const joinCodes = joinCodeList.workspaceId === selectedWorkspaceId ? joinCodeList.codes : []
+  const joinCodesLoading = canManage && Boolean(selectedWorkspaceId) && joinCodeList.workspaceId !== selectedWorkspaceId
+  const joinCodeListError = joinCodeList.workspaceId === selectedWorkspaceId ? joinCodeList.error : ''
 
   return <>
     <SectionHeading eyebrow="WORKSPACE ACCESS" title="Team members" description="Manage who can access this workspace and what they can do." action={canManage ? <div className="team-header-actions"><Button className="primary-action" onClick={() => setInviteOpen(true)}><MailPlus data-icon="inline-start" /> Invite member</Button></div> : undefined} />
@@ -153,7 +164,7 @@ export function TeamPage() {
 
     <Card className="team-roles-card"><CardContent><div className="team-role-note"><span className="team-role-note-icon"><Shield /></span><div><strong>Workspace roles</strong><p><b>Admins</b> can invite people and manage membership. <b>Members</b> can access the workspace. Review tasks will be assigned to members separately.</p></div></div></CardContent></Card>
 
-    {canManage && <Card className="team-join-codes-card"><CardHeader className="team-card-header"><div className="team-heading-copy"><CardTitle>Workspace join codes</CardTitle><CardDescription>Share a time-limited code with people who should join this workspace.</CardDescription></div><Button className="team-create-code-button" variant="outline" onClick={() => { setCreatedJoinCode(null); setJoinCodeError(''); setJoinCodeOpen(true) }}><KeyRound data-icon="inline-start" /> Create join code</Button></CardHeader><CardContent className="team-card-content">{joinCodeError && <Alert variant="destructive"><AlertCircle /><AlertDescription>{joinCodeError}</AlertDescription></Alert>}{joinCodesLoading ? <div className="team-join-code-loading" role="status">Loading join codes…</div> : joinCodes.filter((code) => code.workspaceId === selectedWorkspaceId).length ? <div className="team-join-code-list">{joinCodes.filter((code) => code.workspaceId === selectedWorkspaceId).map((code) => { const expired = Date.parse(code.expiresAt) <= Date.now(); const inactive = Boolean(code.revokedAt) || expired; return <div className="team-join-code-row" key={code.id}><span><strong>{inactive ? (code.revokedAt ? 'Revoked' : 'Expired') : 'Active code'}</strong><small>{code.revokedAt ? `Revoked ${new Date(code.revokedAt).toLocaleDateString()}` : `Expires ${new Date(code.expiresAt).toLocaleString()}`}</small></span>{!inactive && <Button size="sm" variant="outline" disabled={joinCodeBusy} onClick={() => setRevokeTarget(code)}>Revoke</Button>}</div> })}</div> : <p className="team-join-code-empty">No join codes yet. Create one to let teammates join without an email invite.</p>}</CardContent></Card>}
+    {canManage && <Card className="team-join-codes-card"><CardHeader className="team-card-header"><div className="team-heading-copy"><CardTitle>Workspace join codes</CardTitle><CardDescription>Share a time-limited code with people who should join this workspace.</CardDescription></div><Button className="team-create-code-button" variant="outline" onClick={() => { setCreatedJoinCode(null); setJoinCodeError(''); setJoinCodeOpen(true) }}><KeyRound data-icon="inline-start" /> Create join code</Button></CardHeader><CardContent className="team-card-content">{(joinCodeError || joinCodeListError) && <Alert variant="destructive"><AlertCircle /><AlertDescription>{joinCodeError || joinCodeListError}</AlertDescription></Alert>}{joinCodesLoading ? <div className="team-join-code-loading" role="status">Loading join codes…</div> : joinCodes.length ? <div className="team-join-code-list">{joinCodes.map((code) => { const expired = now > 0 && Date.parse(code.expiresAt) <= now; const inactive = Boolean(code.revokedAt) || expired; return <div className="team-join-code-row" key={code.id}><span><strong>{inactive ? (code.revokedAt ? 'Revoked' : 'Expired') : 'Active code'}</strong><small>{code.revokedAt ? `Revoked ${new Date(code.revokedAt).toLocaleDateString()}` : `Expires ${new Date(code.expiresAt).toLocaleString()}`}</small></span>{!inactive && <Button size="sm" variant="outline" disabled={joinCodeBusy} onClick={() => setRevokeTarget(code)}>Revoke</Button>}</div> })}</div> : <p className="team-join-code-empty">No join codes yet. Create one to let teammates join without an email invite.</p>}</CardContent></Card>}
 
     <Dialog open={inviteOpen} onOpenChange={(open) => { if (!isMutating) { setInviteOpen(open); if (open) setInviteError('') } }}><DialogContent className="team-invite-dialog"><DialogHeader><DialogTitle>Invite a member</DialogTitle><DialogDescription>Add someone to {selectedWorkspace?.name ?? 'this workspace'}. New users receive a sign-in invitation.</DialogDescription></DialogHeader><form onSubmit={(event) => void submitInvite(event)}>{inviteError && <Alert id="team-invite-error" variant="destructive"><AlertCircle /><AlertDescription>{inviteError}</AlertDescription></Alert>}<FieldGroup><Field><FieldLabel htmlFor="team-invite-email">Email address</FieldLabel><Input id="team-invite-email" type="email" autoComplete="email" required maxLength={254} placeholder="name@company.com" value={email} aria-describedby={inviteError ? 'team-invite-error' : undefined} onChange={(event) => { setEmail(event.target.value); if (inviteError) setInviteError('') }} /><FieldDescription>Existing accounts are added directly. New users receive an email invite.</FieldDescription></Field><Field><FieldLabel htmlFor="team-invite-role">Workspace role</FieldLabel><select id="team-invite-role" className="team-form-select" value={inviteRole} onChange={(event) => setInviteRole(event.target.value as WorkspaceRole)}><option value="member">Member</option><option value="admin">Admin</option></select></Field></FieldGroup><DialogFooter><Button type="button" variant="outline" disabled={isMutating} onClick={() => setInviteOpen(false)}>Cancel</Button><Button type="submit" className="primary-action" disabled={isMutating || !email.trim()}>{isMutating ? 'Sending invite…' : 'Send invitation'}</Button></DialogFooter></form></DialogContent></Dialog>
 

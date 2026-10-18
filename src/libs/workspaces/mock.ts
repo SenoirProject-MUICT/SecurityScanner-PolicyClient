@@ -1,5 +1,5 @@
 import { simulateMockLoading } from '@/libs/mock-delay'
-import type { CreatedWorkspaceJoinCode, WorkspaceJoinCode, WorkspaceMember, WorkspaceMemberService, WorkspaceOption, WorkspaceRole } from './types'
+import type { CreatedWorkspaceJoinCode, WorkspaceJoinCode, WorkspaceMember, WorkspaceMemberService } from './types'
 
 const storageKey = 'policy-desk.mock-workspaces.v1'
 type MockWorkspace = { id: string; name: string; createdAt: string }

@@ -1,4 +1,6 @@
 import { withSupabase } from 'npm:@supabase/server@1'
+import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
+import type { Database } from '../../../src/libs/supabase/database.types.ts'
 
 type Role = 'admin' | 'member'
 type MemberStatus = 'active' | 'invited' | 'disabled'
@@ -22,7 +24,7 @@ export default {
         })
         return json({ error: 'Your Supabase session has an invalid user ID. Sign out and sign in again with Supabase Auth.' }, 401)
       }
-      const admin = context.supabaseAdmin
+      const admin = context.supabaseAdmin as SupabaseClient<Database>
 
       const body = await request.json().catch(() => ({}))
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -249,7 +251,7 @@ export default {
   }),
 }
 
-async function resolveUserWorkspaces(admin: any, user: { id: string; email?: string; user_metadata?: Record<string, unknown> }) {
+async function resolveUserWorkspaces(admin: SupabaseClient<Database>, user: { id: string; email?: string; user_metadata?: Record<string, unknown> }) {
   const email = user.email?.trim().toLowerCase() ?? ''
   const { data: pendingInvites, error: pendingError } = await admin
     .from('workspace_memberships')
@@ -279,7 +281,7 @@ async function resolveUserWorkspaces(admin: any, user: { id: string; email?: str
 
   const { data: memberships, error: membershipError } = await admin
     .from('workspace_memberships')
-    .select('workspace_id, role, is_default, status, workspaces(name)')
+    .select('workspace_id, role, is_default, status')
     .eq('user_id', user.id)
     .eq('status', 'active')
     .order('is_default', { ascending: false })
@@ -297,7 +299,15 @@ async function resolveUserWorkspaces(admin: any, user: { id: string; email?: str
     return []
   }
 
-  if (!memberships.some((membership: any) => membership.is_default)) {
+  const workspaceIds = memberships.map((membership) => membership.workspace_id)
+  const { data: workspaceRows, error: workspaceError } = await admin
+    .from('workspaces')
+    .select('id, name')
+    .in('id', workspaceIds)
+  if (workspaceError) throw workspaceError
+  const workspaceNames = new Map((workspaceRows ?? []).map((workspace) => [workspace.id, workspace.name]))
+
+  if (!memberships.some((membership) => membership.is_default)) {
     const { error: defaultError } = await admin.from('workspace_memberships')
       .update({ is_default: true, updated_at: new Date().toISOString() })
       .eq('workspace_id', memberships[0].workspace_id)
@@ -306,15 +316,15 @@ async function resolveUserWorkspaces(admin: any, user: { id: string; email?: str
     memberships[0].is_default = true
   }
 
-  return memberships.map((membership: any) => ({
+  return memberships.map((membership) => ({
     workspaceId: membership.workspace_id,
-    name: Array.isArray(membership.workspaces) ? membership.workspaces[0]?.name : membership.workspaces?.name,
+    name: workspaceNames.get(membership.workspace_id),
     role: membership.role as Role,
     isDefault: membership.is_default,
   }))
 }
 
-async function findUserByEmail(admin: any, email: string) {
+async function findUserByEmail(admin: SupabaseClient<Database>, email: string) {
   for (let page = 1; page <= 20; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
     if (error) throw error
@@ -325,7 +335,7 @@ async function findUserByEmail(admin: any, email: string) {
   return null
 }
 
-async function countActiveAdmins(admin: any, workspaceId: string) {
+async function countActiveAdmins(admin: SupabaseClient<Database>, workspaceId: string) {
   const { count, error } = await admin.from('workspace_memberships')
     .select('id', { count: 'exact', head: true })
     .eq('workspace_id', workspaceId)

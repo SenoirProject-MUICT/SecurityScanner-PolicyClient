@@ -90,9 +90,9 @@ function buildActivityTrend(policies: ReturnType<typeof usePolicies>['policies']
   const effectiveActivity = [...activity]
   const hasEvent = (id: string, type: PolicyActivityType) => activity.some((event) => event.policyId === id && event.type === type)
   for (const policy of policies) {
-    if (!hasEvent(policy.id, 'added')) effectiveActivity.push({ id: `legacy-added-${policy.id}`, policyId: policy.id, policyName: policy.name, type: 'added', occurredAt: policy.createdAt })
-    if (policy.status === 'draft' && !hasEvent(policy.id, 'draft')) effectiveActivity.push({ id: `legacy-draft-${policy.id}`, policyId: policy.id, policyName: policy.name, type: 'draft', occurredAt: policy.updatedAt })
-    if (getPolicyLifecycle(policy) === 'scheduled' && !hasEvent(policy.id, 'scheduled')) effectiveActivity.push({ id: `legacy-scheduled-${policy.id}`, policyId: policy.id, policyName: policy.name, type: 'scheduled', occurredAt: policy.updatedAt })
+    if (!hasEvent(policy.id, 'added')) effectiveActivity.push({ id: `legacy-added-${policy.id}`, workspaceId: policy.workspaceId, policyId: policy.id, policyName: policy.name, type: 'added', occurredAt: policy.createdAt })
+    if (policy.status === 'draft' && !hasEvent(policy.id, 'draft')) effectiveActivity.push({ id: `legacy-draft-${policy.id}`, workspaceId: policy.workspaceId, policyId: policy.id, policyName: policy.name, type: 'draft', occurredAt: policy.updatedAt })
+    if (getPolicyLifecycle(policy) === 'scheduled' && !hasEvent(policy.id, 'scheduled')) effectiveActivity.push({ id: `legacy-scheduled-${policy.id}`, workspaceId: policy.workspaceId, policyId: policy.id, policyName: policy.name, type: 'scheduled', occurredAt: policy.updatedAt })
   }
   return Array.from({ length: rangeDays }, (_, index) => {
     const date = new Date(start); date.setDate(start.getDate() + index)

@@ -35,7 +35,7 @@ async function invoke<T = unknown>(body: Record<string, unknown>): Promise<T> {
   if (sessionError) throw sessionError
   const accessToken = sessionData.session?.access_token
   if (!accessToken) throw new Error('Sign in again before managing workspace members.')
-  if (import.meta.env.DEV) logWorkspaceAuthDiagnostics(sessionData.session)
+  if (import.meta.env.DEV && sessionData.session) logWorkspaceAuthDiagnostics(sessionData.session)
   const { data, error } = await supabase.functions.invoke('workspace-members', {
     body,
     headers: { Authorization: `Bearer ${accessToken}` },

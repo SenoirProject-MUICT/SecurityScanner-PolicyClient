@@ -32,10 +32,11 @@ function AuthRoot() {
 }
 function ProtectedLayout() {
   const { user, isLoading } = useAuth()
+  const userId = user?.id
   const { workspaces, isLoading: isWorkspaceLoading, error: workspaceError, initialize } = useWorkspaceStore()
   const location = useLocation()
   const reduceMotion = useReducedMotion()
-  useEffect(() => { if (user) void initialize() }, [initialize, user?.id])
+  useEffect(() => { if (userId) void initialize() }, [initialize, userId])
   if (!user && !isLoading) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   return <AnimatePresence mode="wait" initial={false}>
     <motion.div key={isLoading || isWorkspaceLoading ? 'workspace-loading' : workspaceError || !workspaces.length ? 'workspace-setup' : 'workspace-ready'} className="workspace-transition" initial={{ opacity: 0, transform: reduceMotion ? 'scale(1)' : 'scale(.96)' }} animate={{ opacity: 1, transform: 'scale(1)' }} exit={{ opacity: 0, transform: reduceMotion ? 'scale(1)' : 'scale(.985)' }} transition={{ duration: reduceMotion ? 0.12 : 0.24, ease: [0.23, 1, 0.32, 1] }}>

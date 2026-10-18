@@ -52,7 +52,7 @@ export const mockPolicyRepository: PolicyRepository = {
     return updated
   },
   async listActivity(workspaceId) { return readActivity().filter((activity) => activity.workspaceId === workspaceId) },
-  async recordActivity(policy, type, _ownerId) {
+  async recordActivity(policy, type) {
     const activity: PolicyActivity = { id: crypto.randomUUID(), workspaceId: policy.workspaceId, policyId: policy.id, policyName: policy.name, type, occurredAt: new Date().toISOString() }
     try { window.localStorage.setItem(activityStorageKey, JSON.stringify([activity, ...readActivity()])) }
     catch { throw new Error('Your browser could not save policy activity.') }
