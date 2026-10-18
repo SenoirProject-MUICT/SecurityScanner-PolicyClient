@@ -1,0 +1,54 @@
+
+name: Label Auto Merge
+
+on:
+  pull_request_target:
+    types: [labeled, synchronize, reopened, ready_for_review]
+  check_suite:
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Merge labeled PRs with passing CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          prs=$(gh pr list \
+            --state open \
+            --base main \
+            --label automerge \
+            --json number \
+            --jq '.[].number')
+
+          for pr in $prs; do
+            echo "Checking PR #$pr"
+
+            draft=$(gh pr view "$pr" --json isDraft \
+              --jq '.isDraft')
+
+            if [ "$draft" = "true" ]; then
+              echo "PR is draft, skipping"
+              continue
+            fi
+
+            # Check required CI job
+            if ! gh pr checks "$pr" \
+              --required --fail-on-pending; then
+              echo "Required checks not passing yet"
+              continue
+            fi
+
+            # Attempt merge; GitHub enforces branch rules
+            gh pr merge "$pr" --squash --delete-branch \
+              || echo "PR #$pr is not mergeable yet"
+          done
