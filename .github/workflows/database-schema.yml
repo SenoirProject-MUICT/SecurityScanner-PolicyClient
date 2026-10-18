@@ -1,0 +1,116 @@
+name: Database schema
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type deploy to apply pending migrations to Supabase
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: supabase-production-migrations
+  cancel-in-progress: false
+
+jobs:
+  label-database-change:
+    name: Mark database changes
+    if: ${{ false }} # Re-enable when the dbchange label automation is ready.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Add dbchange label when schema files changed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number,
+              per_page: 100,
+            });
+            const hasDatabaseChange = files.some(({ filename }) =>
+              filename === 'supabase/schema.sql' || filename.startsWith('supabase/migrations/'),
+            );
+
+            if (!hasDatabaseChange) {
+              const labels = await github.paginate(github.rest.issues.listLabelsOnIssue, {
+                owner,
+                repo,
+                issue_number: pull_number,
+                per_page: 100,
+              });
+              if (labels.some(({ name }) => name === 'dbchange')) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: pull_number, name: 'dbchange' });
+              }
+              core.info('No database schema files changed; dbchange label is absent.');
+              return;
+            }
+
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: 'dbchange' });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: 'dbchange',
+                color: '1d76db',
+                description: 'This pull request changes the Supabase database schema.',
+              });
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: pull_number,
+              labels: ['dbchange'],
+            });
+            core.info('Added dbchange label.');
+
+  deploy-migrations:
+    name: Manually deploy Supabase migrations
+    if: ${{ false }} # Re-enable when manual Supabase deployments are ready.
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Check deployment settings
+        shell: bash
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "Missing SUPABASE_ACCESS_TOKEN secret"; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo "Missing SUPABASE_DB_PASSWORD secret"; exit 1; }
+          test -n "$SUPABASE_PROJECT_ID" || { echo "Missing SUPABASE_PROJECT_ID variable"; exit 1; }
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Link Supabase project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Review pending migrations
+        run: supabase db push --dry-run
+
+      - name: Apply pending migrations
+        run: supabase db push

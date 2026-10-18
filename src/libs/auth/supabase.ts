@@ -17,6 +17,11 @@ export const supabaseAuthService: AuthService = {
   async signUp(email, password, name) {
     const { data, error } = await supabase!.auth.signUp({ email, password, options: { data: { full_name: name } } })
     if (error) throw error
+    // Supabase may return an obfuscated user with no identities when this
+    // email is already registered. It is not a successful new registration.
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      throw new Error('An account with this email may already exist. Try signing in instead.')
+    }
     return data.session ? mapUser(data.session) : null
   },
   async updateProfile(name) {

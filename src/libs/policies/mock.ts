@@ -1,24 +1,25 @@
 import type { Policy, PolicyActivity, PolicyInput, PolicyRepository } from './types'
 import { simulateMockLoading } from '@/libs/mock-delay'
+import { getMockWorkspaceId } from '@/libs/workspaces/mock'
 
 const storageKey = 'policy-desk.policies.v2'
 const activityStorageKey = 'policy-desk.activity.v1'
 const demoUser = { id: 'mock-demo-user', name: 'Alex Morgan' }
 const samplePolicies: Policy[] = [
   {
-    id: 'sample-secure-review', name: 'Secure code review', description: 'Review changes for common security risks before they are merged.',
+    id: 'sample-secure-review', workspaceId: getMockWorkspaceId(demoUser.id), name: 'Secure code review', description: 'Review changes for common security risks before they are merged.',
     labels: ['Engineering', 'Security'], status: 'active',
     effectiveFrom: null, effectiveUntil: null, ownerId: demoUser.id, createdBy: demoUser.name,
     createdAt: daysAgo(12), updatedAt: daysAgo(1),
   },
   {
-    id: 'sample-accessibility', name: 'Accessible product design', description: 'Make core user journeys understandable and usable for everyone.',
+    id: 'sample-accessibility', workspaceId: getMockWorkspaceId(demoUser.id), name: 'Accessible product design', description: 'Make core user journeys understandable and usable for everyone.',
     labels: ['Product'], status: 'active',
     effectiveFrom: sampleDateOffset(-2), effectiveUntil: sampleDateOffset(7), ownerId: demoUser.id, createdBy: 'Priya Shah',
     createdAt: daysAgo(6), updatedAt: daysAgo(3),
   },
   {
-    id: 'sample-incident', name: 'Incident response basics', description: 'Give teams a consistent process for handling and learning from incidents.',
+    id: 'sample-incident', workspaceId: getMockWorkspaceId(demoUser.id), name: 'Incident response basics', description: 'Give teams a consistent process for handling and learning from incidents.',
     labels: ['Operations', 'Security'], status: 'draft',
     effectiveFrom: sampleDateOffset(3), effectiveUntil: sampleDateOffset(8), ownerId: demoUser.id, createdBy: 'Alex Morgan',
     createdAt: daysAgo(4), updatedAt: daysAgo(4),
@@ -26,7 +27,7 @@ const samplePolicies: Policy[] = [
 ]
 
 export const mockPolicyRepository: PolicyRepository = {
-  async list() { await simulateMockLoading(); return readLocalPolicies() },
+  async list(workspaceId) { await simulateMockLoading(); return readLocalPolicies().filter((policy) => policy.workspaceId === workspaceId) },
   async create(input: PolicyInput) {
     const now = new Date().toISOString()
     const policy: Policy = { ...input, id: crypto.randomUUID(), createdAt: now, updatedAt: now }
@@ -35,24 +36,24 @@ export const mockPolicyRepository: PolicyRepository = {
   },
   async update(id, input) {
     const current = readLocalPolicies()
-    const existing = current.find((policy) => policy.id === id)
+    const existing = current.find((policy) => policy.id === id && policy.workspaceId === input.workspaceId)
     if (!existing) throw new Error('This policy could not be found. Refresh the page and try again.')
-    const policy: Policy = { ...existing, ...input, ownerId: existing.ownerId, createdBy: existing.createdBy, updatedAt: new Date().toISOString() }
+    const policy: Policy = { ...existing, ...input, workspaceId: existing.workspaceId, ownerId: existing.ownerId, createdBy: existing.createdBy, updatedAt: new Date().toISOString() }
     writeLocalPolicies(current.map((item) => item.id === id ? policy : item))
     return policy
   },
-  async delete(id) { writeLocalPolicies(readLocalPolicies().filter((policy) => policy.id !== id)) },
-  async setStatus(id, status) {
+  async delete(id, workspaceId) { writeLocalPolicies(readLocalPolicies().filter((policy) => policy.id !== id || policy.workspaceId !== workspaceId)) },
+  async setStatus(id, status, workspaceId) {
     const current = readLocalPolicies()
-    const existing = current.find((policy) => policy.id === id)
+    const existing = current.find((policy) => policy.id === id && policy.workspaceId === workspaceId)
     if (!existing) throw new Error('This policy could not be found. Refresh the page and try again.')
     const updated = { ...existing, status, updatedAt: new Date().toISOString() }
     writeLocalPolicies(current.map((policy) => policy.id === id ? updated : policy))
     return updated
   },
-  async listActivity() { return readActivity() },
+  async listActivity(workspaceId) { return readActivity().filter((activity) => activity.workspaceId === workspaceId) },
   async recordActivity(policy, type) {
-    const activity: PolicyActivity = { id: crypto.randomUUID(), policyId: policy.id, policyName: policy.name, type, occurredAt: new Date().toISOString() }
+    const activity: PolicyActivity = { id: crypto.randomUUID(), workspaceId: policy.workspaceId, policyId: policy.id, policyName: policy.name, type, occurredAt: new Date().toISOString() }
     try { window.localStorage.setItem(activityStorageKey, JSON.stringify([activity, ...readActivity()])) }
     catch { throw new Error('Your browser could not save policy activity.') }
   },
@@ -61,7 +62,9 @@ export const mockPolicyRepository: PolicyRepository = {
 function readActivity(): PolicyActivity[] {
   try {
     const parsed: unknown = JSON.parse(window.localStorage.getItem(activityStorageKey) ?? '[]')
-    return Array.isArray(parsed) ? parsed as PolicyActivity[] : []
+    if (!Array.isArray(parsed)) return []
+    const policies = readLocalPolicies()
+    return (parsed as Partial<PolicyActivity>[]).map((activity) => ({ ...activity, workspaceId: activity.workspaceId ?? policies.find((policy) => policy.id === activity.policyId)?.workspaceId ?? getMockWorkspaceId(demoUser.id) })) as PolicyActivity[]
   } catch { return [] }
 }
 
@@ -80,7 +83,7 @@ function normalizePolicy(value: Partial<Policy>): Policy {
   const status = value.status === 'draft' || value.status === 'inactive' ? value.status : 'active'
   const sampleRange = getSampleRange(value.id)
   return {
-    id: value.id ?? crypto.randomUUID(), name: value.name ?? 'Untitled policy', description: value.description ?? '',
+    id: value.id ?? crypto.randomUUID(), workspaceId: value.workspaceId ?? getMockWorkspaceId(value.ownerId ?? demoUser.id), name: value.name ?? 'Untitled policy', description: value.description ?? '',
     labels: value.labels ?? [], status, effectiveFrom: value.effectiveFrom ?? sampleRange?.from ?? null, effectiveUntil: value.effectiveUntil ?? sampleRange?.until ?? null,
     ownerId: value.ownerId ?? demoUser.id, createdBy: value.createdBy ?? demoUser.name,
     createdAt: value.createdAt ?? now, updatedAt: value.updatedAt ?? now,

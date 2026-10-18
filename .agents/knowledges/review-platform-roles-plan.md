@@ -2,7 +2,7 @@
 
 ## Status
 
-Not implemented. Current login/signup/profile flows use Supabase Auth or mock auth, but the user model contains only id, email, and name. There is no workspace membership table, role, member admin UI, or role-based access enforcement.
+**DONE in application code and mock mode; production deployment remains pending.** Users can choose to create a workspace or join one with a time-limited code; signup does not silently create a workspace. Workspace admins can create/revoke join codes and manage members, invitations, roles, and access from the Team page. The authenticated `workspace-members` Supabase Edge Function and versioned migrations implement the production path. Deploy the migration and function manually before using these features against Supabase; database workflow jobs remain disabled as requested. Policies and labels are AI reference content, scoped to the selected workspace, and are not workspace business workflows.
 
 References: [auth types](../../src/libs/auth/types.ts), [Supabase auth adapter](../../src/libs/auth/supabase.ts), [auth store](../../src/stores/auth-store.ts), [current schema](../../supabase/schema.sql).
 
@@ -20,11 +20,13 @@ Establish a trusted authorization model before implementing repository administr
 
 ## Implementation sequence
 
-1. Define workspace/membership data model and whether initial deployment supports one workspace or multiple.
-2. Add invitation/provisioning using Supabase Auth; do not let a public client signup assign privileged roles.
-3. Add `admin`/`member` management UI: invite, list, edit role, deactivate/remove.
-4. Centralize permission checks for UI display while enforcing the same decisions in database RLS and trusted server functions.
-5. Add mock membership and role behavior so UI contributions can be exercised without Supabase.
+1. **Done:** define the workspace and `admin`/`member` data model; add a migration for pending invites and membership email details.
+2. **Done in code:** let a user explicitly create a workspace or join one using an admin-generated, expiring join code; do not auto-create a workspace at signup. Email invitations are also supported through the authenticated Edge Function.
+3. **Done:** add Team UI for member listing, invitations, role changes, deactivation/reactivation, and removal.
+4. **Done for membership actions:** enforce active membership and admin checks in the Edge Function; limit direct membership reads with RLS; protect the final active admin.
+5. **Done:** implement matching mock-mode storage and behavior.
+6. **Pending manual production setup:** apply the workspace migrations and deploy `workspace-members`. Database workflow jobs are deliberately disabled.
+7. **Next:** define workspace access for repositories and review records. Keep AI policy and label content separate unless a concrete product need requires workspace ownership.
 
 ## Initial permission proposal
 
@@ -41,6 +43,6 @@ Establish a trusted authorization model before implementing repository administr
 
 ## Decisions before implementation
 
-- Single-workspace first release or multi-workspace from the beginning? Suggested: model workspace IDs from day one, even if the UI creates one workspace initially.
+- Single-workspace first release or multi-workspace from the beginning? **Resolved:** support multiple workspaces; users explicitly create or join a workspace during setup.
 - Can an admin also be assigned as an MR reviewer? Suggested: yes.
 - Should members have additional capabilities beyond the matrix (for example, repository visibility or editing policies)? Confirm before RLS policies are finalized.

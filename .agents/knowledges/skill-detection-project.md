@@ -22,6 +22,18 @@ Typical data flow:
 
 Keep UI components independent of storage details. Add shared business operations to the domain library and expose them through the store; avoid calling Supabase directly in pages.
 
+### Workspace scope for policy knowledge
+
+Policies are reusable AI knowledge that the Skill Detection system can consult. A policy is not itself a business workflow or approval decision. `workspace_id` scopes policies, labels, and policy activity so active workspace members share the appropriate library; application code owns policy lifecycle and approval behavior. Supabase RLS uses active workspace membership as the data boundary. The migration that links existing policy data to workspaces is [20261018020000_workspace_scope_ai_policies.sql](../../supabase/migrations/20261018020000_workspace_scope_ai_policies.sql).
+
+Workspace selection and membership state live in [src/stores/workspace-store.ts](../../src/stores/workspace-store.ts), backed by [the workspace service](../../src/libs/workspaces/index.ts). Policy and label stores read the selected workspace ID and pass it through their domain facades to the mock or Supabase repositories. In mock mode, policies and labels persist in browser `localStorage` and are partitioned by a deterministic mock workspace ID; in production, rows are selected and mutated by `workspace_id`, with RLS as the server-side boundary.
+
+### Workspace creation, joining, and roles
+
+**Implemented in application code and mock mode; production deployment is still an operator setup step.** After authentication, a user without a workspace is routed to [the workspace setup page](../../src/pages/workspace-setup/page.tsx), where they explicitly create a workspace or join using a time-limited code. Signup does not create a workspace automatically. Workspace state and selection are managed by [the workspace store](../../src/stores/workspace-store.ts); the [workspace service facade](../../src/libs/workspaces/index.ts) selects mock or Supabase behavior. Mock workspaces, members, invitations, and join codes persist in browser local storage. Production operations use the authenticated [workspace-members Edge Function](../../supabase/functions/workspace-members/index.ts), with schema in [supabase/schema.sql](../../supabase/schema.sql) and versioned migrations in [supabase/migrations](../../supabase/migrations). Apply migrations and deploy the function manually before production use.
+
+Roles are `admin` and `member`; reviewer is an MR assignment, not a workspace role. Admins can invite/manage members and create/revoke join codes. Members do not have workspace administration permissions. The [Team page](../../src/pages/team/page.tsx) is the member-management UI. Relevant context and remaining production setup are documented in [the workspace roles plan](review-platform-roles-plan.md).
+
 ## Feature and file map
 
 ### Routing and app shell
@@ -40,6 +52,8 @@ Routes:
 - `/labels` — create, edit, browse, and remove reusable labels, [src/pages/labels/page.tsx](../../src/pages/labels/page.tsx)
 - `/assistant` — prompt-based policy draft flow, [src/pages/assistant/page.tsx](../../src/pages/assistant/page.tsx)
 - `/settings` — account and connection settings, [src/pages/settings/page.tsx](../../src/pages/settings/page.tsx)
+- `/team` — workspace members, roles, invitations, and join-code management, [src/pages/team/page.tsx](../../src/pages/team/page.tsx)
+- Workspace setup — explicit create-or-join flow for authenticated users without a selected workspace, [src/pages/workspace-setup/page.tsx](../../src/pages/workspace-setup/page.tsx)
 
 ### Policies
 
@@ -110,7 +124,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<supabase-publishable-key>
 Before using production mode:
 
 1. Create/configure the Supabase project and enable the desired Auth sign-in methods (the UI uses email/password).
-2. Review and run [`supabase/schema.sql`](../../supabase/schema.sql) in the Supabase SQL editor. It creates/updates `public.policies`, `public.policy_labels`, and `public.policy_activity`, plus owner-scoped RLS policies and indexes.
+2. Apply the workspace and policy migrations from [`supabase/migrations`](../../supabase/migrations), and deploy the `workspace-members` Edge Function. [`supabase/schema.sql`](../../supabase/schema.sql) is the schema reference; production authorization uses workspace membership RLS and the authenticated Edge Function for privileged membership operations.
 3. Set the URL and publishable key above, then restart the Vite server.
 
 If the credentials exist but database requests fail, the app should surface the real error rather than silently replacing production data with mock data. Mock and Supabase datasets remain separate; switching modes does not migrate or copy records.
@@ -122,7 +136,7 @@ The proposed repository review, reviewer management, Git provider, vulnerability
 ## Working conventions for agents
 
 - Inspect existing domain types, repository interface, schema, and UI patterns before changing behavior. Keep mock and Supabase implementations aligned.
-- Keep database reads/writes behind the domain library and Zustand store. Supabase RLS is part of the security boundary; preserve owner-scoped access.
+- Keep database reads/writes behind the domain library and Zustand store. Supabase RLS is part of the security boundary; workspace data must stay scoped to active membership.
 - If adding a persisted feature, update both mock persistence and [`supabase/schema.sql`](../../supabase/schema.sql)/Supabase repository as appropriate.
 - Keep env secrets out of source control and never put privileged Supabase credentials in browser code.
 - Keep policy date/status behavior consistent with [src/libs/policies/status.ts](../../src/libs/policies/status.ts) and the schedule/dashboard/list views.
