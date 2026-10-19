@@ -4,7 +4,7 @@
 
 Not implemented. The client has no MR diff analyzer, skill finding model, vulnerability taxonomy, or reviewer feedback persistence. Existing policy labels are for organization only. The prompt assistant is deterministic mock generation, not the Skill Detection service or a live LLM.
 
-References: [general policy label type](../../src/libs/labels/types.ts), [mock assistant implementation](../../src/libs/policy-assistant/mock.ts), [project context](skill-detection-project.md).
+References: [general policy label type](../../apps/client/src/libs/labels/types.ts), [mock assistant implementation](../../apps/client/src/libs/policy-assistant/mock.ts), [project context](skill-detection-project.md).
 
 ## Dependencies
 

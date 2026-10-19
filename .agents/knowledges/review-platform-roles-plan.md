@@ -4,7 +4,7 @@
 
 **DONE in application code and mock mode; production deployment remains pending.** Users can choose to create a workspace or join one with a time-limited code; signup does not silently create a workspace. Workspace admins can create/revoke join codes and manage members, invitations, roles, and access from the Team page. The authenticated `workspace-members` Supabase Edge Function and versioned migrations implement the production path. Deploy the migration and function manually before using these features against Supabase; database workflow jobs remain disabled as requested. Policies and labels are AI reference content, scoped to the selected workspace, and are not workspace business workflows.
 
-References: [auth types](../../src/libs/auth/types.ts), [Supabase auth adapter](../../src/libs/auth/supabase.ts), [auth store](../../src/stores/auth-store.ts), [current schema](../../supabase/schema.sql).
+References: [auth types](../../apps/client/src/libs/auth/types.ts), [Supabase auth adapter](../../apps/client/src/libs/auth/supabase.ts), [auth store](../../apps/client/src/stores/auth-store.ts), [current schema](../../apps/backend/supabase/schema.sql).
 
 ## Goal
 

@@ -38,7 +38,7 @@ jobs:
               per_page: 100,
             });
             const hasDatabaseChange = files.some(({ filename }) =>
-              filename === 'supabase/schema.sql' || filename.startsWith('supabase/migrations/'),
+              filename === 'apps/backend/supabase/schema.sql' || filename.startsWith('apps/backend/supabase/migrations/'),
             );
 
             if (!hasDatabaseChange) {
@@ -107,10 +107,10 @@ jobs:
           version: latest
 
       - name: Link Supabase project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+        run: supabase --workdir apps/backend link --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Review pending migrations
-        run: supabase db push --dry-run
+        run: supabase --workdir apps/backend db push --dry-run
 
       - name: Apply pending migrations
-        run: supabase db push
+        run: supabase --workdir apps/backend db push

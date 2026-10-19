@@ -1,72 +1,33 @@
-# Policy Desk
+# Policy Desk monorepo
 
-A small React client for managing policies and reusable labels. It supports local mock data and an optional Supabase data source.
+This repository contains the Policy Desk web client, FastAPI backend, and Supabase database project.
 
-## Run locally
+## Structure
 
-```sh
-pnpm install
-pnpm dev
-```
+- [`apps/client`](apps/client) — React 19, TypeScript, Vite application. It uses TanStack Query for API caching and supports local mock mode.
+- [`apps/backend/src/policydesk_api`](apps/backend/src/policydesk_api) — FastAPI application and the only server-side application integration with Supabase.
+- [`apps/backend/supabase`](apps/backend/supabase) — Supabase schema, versioned migrations, and local CLI configuration.
+- [`docs`](docs) — setup and feature planning notes.
 
-If `VITE_DATA_MODE` is omitted, the app requests production mode. Production mode requires both Supabase credentials; if either is missing, it falls back to mock mode. Set `VITE_DATA_MODE=mock` to explicitly use local sample data and browser storage.
-
-## Connect Supabase
-
-The root `.env` file is present with empty URL and key values. It is ignored by Git. Copy the variable names from `.env.example` if needed, then fill in your Supabase project URL and **publishable** key:
-
-```env
-VITE_DATA_MODE=production
-VITE_SUPABASE_URL=
-VITE_SUPABASE_PUBLISHABLE_KEY=
-```
-
-Restart the Vite dev server after changing `.env`. The app resolves `VITE_DATA_MODE` to the `RuntimeMode` enum and exposes the resolved `isProd` value through the Zustand runtime-mode store. Production mode requires both Supabase values; without them, the app safely falls back to mock mode. The legacy value `supabase` remains accepted. If the credentials are present but a database request fails, the app surfaces that error instead of silently switching data sources.
-
-The database baseline is in [`supabase/schema.sql`](supabase/schema.sql), with deployable, versioned SQL in [`supabase/migrations`](supabase/migrations). Create future database changes as a new migration; do not edit the production database directly. Existing installations may retain a legacy `skills` column; the client no longer reads or writes that column. Do not put a Supabase secret or service-role key in a `VITE_` variable.
-
-For the complete manual setup of database migrations, Auth redirects, the `workspace-members` Edge Function, and web app environment values, see [Supabase setup](docs/supabase-setup.md). The PowerShell setup script previews migrations and requires typing `APPLY` before changing the remote database.
-
-### Automate Supabase migrations
-
-The `Database schema` GitHub Actions workflow is currently disabled: both jobs are gated off, including when the workflow is manually dispatched. When ready, remove the `if: false` gates to enable PR labeling and manual production deployment.
-
-Configure these values in the GitHub repository's **production** environment:
-
-- Secret `SUPABASE_ACCESS_TOKEN`: a Supabase personal access token for CLI authentication.
-- Secret `SUPABASE_DB_PASSWORD`: the project's database password.
-- Variable `SUPABASE_PROJECT_ID`: the project reference from the Supabase project URL.
-
-The first migration captures the current schema as a baseline. If the remote database was changed manually before migrations were introduced, reconcile its schema and migration history before running the deployment workflow.
-
-Mock and Supabase data are separate. Switching modes does not copy records between local storage and the database.
-
-### Keep Supabase database types in sync
-
-The shared client is typed from [`src/libs/supabase/database.types.ts`](src/libs/supabase/database.types.ts), which currently matches the checked-in schema. After applying a migration, regenerate and commit the type file:
+## Install and run
 
 ```sh
-supabase gen types typescript --linked --schema public > src/libs/supabase/database.types.ts
+pnpm install:all
+pnpm dev:all
 ```
 
-The CLI is not configured in this checkout, so the committed SQL schema was used as the source for the initial type snapshot.
+`pnpm install:all` installs the JavaScript workspace packages, creates `apps/backend/.venv`, and installs the FastAPI dependencies with pip. It requires Python 3.12 or newer; `uv` is optional. `pnpm dev:all` starts the Vite client and FastAPI backend together. Configure `apps/backend/.env` from [`apps/backend/.env.example`](apps/backend/.env.example), and configure `apps/client/.env` from [`apps/client/.env.example`](apps/client/.env.example). Production API mode is the default; set `VITE_DATA_MODE=mock` to use local sample data.
 
-## Labels
+## Common commands
 
-Policies are AI knowledge scoped to a workspace; the workspace ID is tenant/ownership metadata that lets members share the same policy library. Policy behavior such as drafting and approval stays in the application. Policies, labels, and activity history are filtered by the selected workspace, with Supabase RLS enforcing active membership boundaries. The `20261018020000_workspace_scope_ai_policies.sql` migration adds the workspace links and backfills existing records.
+- `pnpm dev` — run the client dev server.
+- `pnpm dev:all` — run the client and FastAPI backend together.
+- `pnpm install:all` — install frontend and backend dependencies.
+- `pnpm lint` — lint the client.
+- `pnpm build` — type-check and build the client.
+- `pnpm --filter @policydesk/backend supabase status` — inspect the local Supabase CLI project.
+- `pnpm --filter @policydesk/backend db:push` — apply pending Supabase migrations (review the target before running).
+- `uv sync --project apps/backend` — optional alternative for installing FastAPI dependencies with uv.
+- `pnpm --filter @policydesk/backend api:dev` — run the FastAPI development server.
 
-Create labels on the Labels page. Policies can only select labels that already exist in the workspace. Policy records store selected label names in a `labels` text array.
-
-## Add shadcn/ui components
-
-The project uses Tailwind CSS v4 and shadcn/ui. Add components with:
-
-```sh
-pnpm exec shadcn add input
-```
-
-## Commands
-
-- `pnpm dev` starts the development server.
-- `pnpm build` runs TypeScript checks and creates a production build.
-- `pnpm lint` runs ESLint.
+For backend boundaries and local API setup, see [`apps/backend/README.md`](apps/backend/README.md). For production Supabase setup and migration safety, see [`docs/supabase-setup.md`](docs/supabase-setup.md).

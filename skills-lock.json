@@ -103,6 +103,12 @@
       "skillPath": "skills/supabase-server/SKILL.md",
       "computedHash": "72fecd2513a506927ef55e01a387ac5d48be6693edb0fc7052225151ee7b2f56"
     },
+    "tanstack-query": {
+      "source": "PyModel/react-frontend-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tanstack-query/SKILL.md",
+      "computedHash": "c871cd7d737269997636feca3b43530b0889968656e7842ccae8db0770f6a188"
+    },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",

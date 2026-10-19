@@ -40,34 +40,34 @@ GitHub REST references: [List pull requests](https://docs.github.com/en/rest/pul
 - `merge_request_files`: merge request ID, provider file path, previous path for rename, status, additions, deletions, changes, patch (nullable), blob SHA (nullable). Unique key: `(merge_request_id, filename)`.
 - `provider_webhook_deliveries`: provider delivery ID, event/action, received/processed timestamps and outcome for replay protection and debugging.
 
-RLS should scope application-visible rows to the user's workspace. The webhook and sync functions must verify the workspace/repository mapping before privileged writes. Workspace membership and workspace-scoped policy schema are implemented in `supabase/schema.sql` and versioned migrations; deploy that foundation before repository tables. Provider credentials must never be readable through RLS.
+RLS should scope application-visible rows to the user's workspace. The webhook and sync functions must verify the workspace/repository mapping before privileged writes. Workspace membership and workspace-scoped policy schema are implemented in `apps/backend/supabase/schema.sql` and versioned migrations; deploy that foundation before repository tables. Provider credentials must never be readable through RLS.
 
 ## Files to add
 
-- `supabase/migrations/<timestamp>_repository_integrations.sql` — the connection, repository, pull request, changed-file, and webhook-delivery tables, indexes, constraints, and RLS policies.
-- `supabase/functions/github-app-callback/index.ts` — installation callback/state validation and connection registration.
-- `supabase/functions/github-webhook/index.ts` — signature verification, delivery deduplication, action routing, and refresh enqueueing.
-- `supabase/functions/github-sync/index.ts` — authenticated admin-triggered initial sync and scheduled reconciliation entry point.
-- `supabase/functions/_shared/github.ts` — GitHub App JWT / installation-token helper, paginated REST client, and typed response mapping.
-- `src/libs/repositories/types.ts` — provider-neutral repository, pull request, changed-file, and sync types.
-- `src/libs/repositories/index.ts` — mock/Supabase facade following existing feature-library conventions.
-- `src/libs/repositories/mock.ts` — local sample repositories, PRs, and file-change data, plus mock connect/sync/disconnect operations.
-- `src/libs/repositories/supabase.ts` — browser-safe reads and authenticated Edge Function invocations; no GitHub API secret/token handling.
-- `src/stores/repository-store.ts` — Zustand state for repositories, sync state, and review requests.
-- `src/pages/integrations/page.tsx` — connect GitHub, show connected accounts/repos, sync status, and disconnect controls.
-- `src/pages/review-queue/page.tsx` — list incoming requests with filters and assignment/readiness states.
-- `src/pages/review-detail/page.tsx` — request summary and changed-file list/patch preview.
-- `src/components/repository-connect-card.tsx` — provider connection affordance and connection state.
-- `src/components/changed-files-list.tsx` — file status, additions/deletions, expandable patch, and GitHub link.
-- `src/components/review-request-card.tsx` — reusable queue row/card.
+- `apps/backend/supabase/migrations/<timestamp>_repository_integrations.sql` — the connection, repository, pull request, changed-file, and webhook-delivery tables, indexes, constraints, and RLS policies.
+- `apps/backend/supabase/functions/github-app-callback/index.ts` — installation callback/state validation and connection registration.
+- `apps/backend/supabase/functions/github-webhook/index.ts` — signature verification, delivery deduplication, action routing, and refresh enqueueing.
+- `apps/backend/supabase/functions/github-sync/index.ts` — authenticated admin-triggered initial sync and scheduled reconciliation entry point.
+- `apps/backend/supabase/functions/_shared/github.ts` — GitHub App JWT / installation-token helper, paginated REST client, and typed response mapping.
+- `apps/client/src/libs/repositories/types.ts` — provider-neutral repository, pull request, changed-file, and sync types.
+- `apps/client/src/libs/repositories/index.ts` — mock/Supabase facade following existing feature-library conventions.
+- `apps/client/src/libs/repositories/mock.ts` — local sample repositories, PRs, and file-change data, plus mock connect/sync/disconnect operations.
+- `apps/client/src/libs/repositories/supabase.ts` — browser-safe reads and authenticated Edge Function invocations; no GitHub API secret/token handling.
+- `apps/client/src/stores/repository-store.ts` — Zustand state for repositories, sync state, and review requests.
+- `apps/client/src/pages/integrations/page.tsx` — connect GitHub, show connected accounts/repos, sync status, and disconnect controls.
+- `apps/client/src/pages/review-queue/page.tsx` — list incoming requests with filters and assignment/readiness states.
+- `apps/client/src/pages/review-detail/page.tsx` — request summary and changed-file list/patch preview.
+- `apps/client/src/components/repository-connect-card.tsx` — provider connection affordance and connection state.
+- `apps/client/src/components/changed-files-list.tsx` — file status, additions/deletions, expandable patch, and GitHub link.
+- `apps/client/src/components/review-request-card.tsx` — reusable queue row/card.
 
 ## Existing files to change
 
-- `src/app/router.tsx` — register `/integrations`, `/reviews`, and `/reviews/:requestId` routes using the existing per-page-folder lazy-loading convention.
-- `src/components/app-shell.tsx` — add Integrations and Review Queue navigation entries, subject to RBAC.
-- `src/pages/settings/page.tsx` — link to integration management or expose the connected provider state.
-- `supabase/schema.sql` or the migration workflow — keep the canonical schema/migration strategy consistent. This repository currently has `supabase/schema.sql` but no migrations directory.
-- `.env.example` and project setup documentation — retain only public `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` for the browser. Document `GITHUB_APP_ID`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET` as Supabase Edge Function secrets (local values in `supabase/functions/.env`, production via Supabase secrets configuration); never prefix them with `VITE_`.
+- `apps/client/src/app/router.tsx` — register `/integrations`, `/reviews`, and `/reviews/:requestId` routes using the existing per-page-folder lazy-loading convention.
+- `apps/client/src/components/app-shell.tsx` — add Integrations and Review Queue navigation entries, subject to RBAC.
+- `apps/client/src/pages/settings/page.tsx` — link to integration management or expose the connected provider state.
+- `apps/backend/supabase/schema.sql` or the migration workflow — keep the canonical schema/migration strategy consistent. This repository currently has `apps/backend/supabase/schema.sql` but no migrations directory.
+- `.env.example` and project setup documentation — retain only public `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` for the browser. Document `GITHUB_APP_ID`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET` as Supabase Edge Function secrets (local values in `apps/backend/supabase/functions/.env`, production via Supabase secrets configuration); never prefix them with `VITE_`.
 - `.agents/knowledges/skill-detection-project.md` — update architecture, environment, and feature status once this plan is implemented.
 
 ## Initial UI behavior
