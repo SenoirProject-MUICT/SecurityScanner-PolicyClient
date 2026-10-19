@@ -26,6 +26,9 @@ import { PolicySearch } from '@/components/policy-search'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { withWorkspaceId } from '@/libs/workspaces/navigation'
 import { useWorkspaces } from '@/libs/workspaces/hooks'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { BrandLogo, BrandMark } from '@/components/brand-logo'
+import { BRAND } from '@/constants/brand'
 
 const navigation = [
   { to: '/', label: 'Overview', end: true, icon: LayoutDashboard },
@@ -95,7 +98,7 @@ function AppLayout() {
           <div className="topbar-actions"><PolicySearch />
             <details ref={profileMenuRef} className="profile-menu">
               <summary className="profile-trigger" aria-label="Open profile menu"><span className="user-avatar">{getInitials(user?.name ?? 'User')}</span><span className="profile-trigger-copy"><strong>{user?.name ?? 'Workspace'}</strong><small>{user?.email ?? ''}</small></span><ChevronDown className="profile-chevron" /></summary>
-              <div className="profile-popover"><div className="profile-menu-heading"><span className="user-avatar">{getInitials(user?.name ?? 'User')}</span><span><strong>{user?.name ?? 'Workspace'}</strong><small>{user?.email ?? ''}</small></span></div><div className="profile-menu-divider" /><NavLink to="/" className="profile-menu-item" onClick={() => profileMenuRef.current?.removeAttribute('open')}><Building2 />Manage workspaces</NavLink><NavLink to={withWorkspaceId('/settings', selectedWorkspaceId)} className="profile-menu-item" onClick={() => profileMenuRef.current?.removeAttribute('open')}><Settings />Account settings</NavLink><button type="button" className="profile-menu-item profile-signout" onClick={() => void handleSignOut()}><LogOut />Sign out</button></div>
+              <div className="profile-popover"><div className="profile-menu-heading"><span className="user-avatar">{getInitials(user?.name ?? 'User')}</span><span><strong>{user?.name ?? 'Workspace'}</strong><small>{user?.email ?? ''}</small></span></div><div className="profile-menu-divider" /><NavLink to="/" className="profile-menu-item" onClick={() => profileMenuRef.current?.removeAttribute('open')}><Building2 />Manage workspaces</NavLink><NavLink to={withWorkspaceId('/settings', selectedWorkspaceId)} className="profile-menu-item" onClick={() => profileMenuRef.current?.removeAttribute('open')}><Settings />Account settings</NavLink><ThemeToggle /><div className="profile-menu-divider" /><button type="button" className="profile-menu-item profile-signout" onClick={() => void handleSignOut()}><LogOut />Sign out</button></div>
             </details>
           </div>
         </header>
@@ -113,8 +116,8 @@ function AppSidebar({ workspaceId, workspaceName, workspaces, onSelectWorkspace,
     <SidebarHeader className="app-sidebar-header">
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton className="app-sidebar-brand" size="lg" tooltip="PolicyDesk" render={<NavLink to="/" onClick={onGoHome} />}>
-            <span className="sidebar-brand-mark">P</span><span className="sidebar-brand-word">Policy<span>Desk</span></span>
+          <SidebarMenuButton className="app-sidebar-brand" size="lg" tooltip={BRAND.name} render={<NavLink to="/" onClick={onGoHome} />}>
+            <BrandLogo className="sidebar-brand-full" /><BrandMark className="sidebar-brand-mark" />
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

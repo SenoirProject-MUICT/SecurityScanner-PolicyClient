@@ -1,10 +1,11 @@
 import type { LabelRepository, PolicyLabel } from './types'
 import { simulateMockLoading } from '@/libs/mock-delay'
 import { getMockWorkspaceId } from '@/libs/workspaces/mock'
+import { BRAND } from '@/constants/brand'
 
 const storageKey = 'policy-desk.labels.v1'
 const defaults = ['Engineering', 'Security', 'Product', 'Operations'].map((name, index) => ({
-  id: `default-label-${index}`, workspaceId: getMockWorkspaceId('mock-demo-user'), name, ownerId: 'mock-demo-user', createdBy: 'Policy Desk', createdAt: new Date(0).toISOString(),
+  id: `default-label-${index}`, workspaceId: getMockWorkspaceId('mock-demo-user'), name, ownerId: 'mock-demo-user', createdBy: BRAND.name, createdAt: new Date(0).toISOString(),
 }))
 
 export const mockLabelRepository: LabelRepository = {

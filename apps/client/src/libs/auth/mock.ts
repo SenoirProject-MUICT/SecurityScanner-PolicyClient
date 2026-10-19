@@ -2,7 +2,7 @@ import type { AuthService, AuthUser } from './types'
 import { simulateMockLoading } from '@/libs/mock-delay'
 
 const storageKey = 'policy-desk.mock-auth.v1'
-const demoUser: AuthUser = { id: 'mock-demo-user', name: 'Alex Morgan', email: 'alex@policydesk.demo' }
+const demoUser: AuthUser = { id: 'mock-demo-user', name: 'Alex Morgan', email: 'alex@zentra.demo' }
 
 export const mockAuthService: AuthService = {
   async getCurrentUser() { await simulateMockLoading(); return readSession() },

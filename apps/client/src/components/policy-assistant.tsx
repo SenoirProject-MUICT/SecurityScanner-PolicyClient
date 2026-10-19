@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { SectionHeading } from '@/components/app-shell'
 import { generateMockPolicy } from '@/libs/policy-assistant'
+import { BRAND } from '@/constants/brand'
 import type { Policy, PolicyDraftInput } from '@/libs/policies'
 
 const promptSchema = z.object({ prompt: z.string().trim().min(12, 'Add a little more detail so the draft has useful context.').max(1200, 'Keep your description under 1,200 characters.') })
@@ -42,7 +43,7 @@ export function PolicyAssistant({ onSave }: { onSave: (input: PolicyDraftInput) 
       <section className="chat-column">
         <div className="chat-toolbar"><span className="assistant-avatar"><Sparkles size={16} /></span><div><strong>Policy assistant</strong><span><i /> Ready to help</span></div><Badge className="preview-badge">Local preview</Badge></div>
         <div className="chat-history" aria-live="polite">
-          <div className="assistant-message"><span className="assistant-message-avatar"><WandSparkles size={14} /></span><div><p>Tell me what your team needs a policy for. I’ll shape it into a title and summary you can review.</p><small>Policy Desk · Draft assistant</small></div></div>
+          <div className="assistant-message"><span className="assistant-message-avatar"><WandSparkles size={14} /></span><div><p>Tell me what your team needs a policy for. I’ll shape it into a title and summary you can review.</p><small>{BRAND.name} · Draft assistant</small></div></div>
           {lastPrompt && <div className="user-message"><p>{lastPrompt}</p></div>}
           {draft && <div className="assistant-message generated-message"><span className="assistant-message-avatar"><Sparkles size={14} /></span><div className="generated-content"><div className="generated-intro"><strong>Here’s a starting point.</strong><span>Review and edit it before adding.</span></div>
             <Card className="generated-card"><CardContent><div className="generated-label"><FileText size={14} /> POLICY DRAFT <span className="draft-status">Editable</span></div><label className="draft-field-label">Policy name<input value={draft.name} maxLength={80} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label><label className="draft-field-label">Summary<textarea rows={4} maxLength={500} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>

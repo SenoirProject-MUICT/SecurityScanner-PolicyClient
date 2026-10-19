@@ -11,6 +11,9 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/stores/auth-store'
 import { useAuthMutations } from '@/libs/auth/hooks'
 import type { WorkspaceOption } from '@/libs/workspaces'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { BrandLogo } from '@/components/brand-logo'
+import { BRAND } from '@/constants/brand'
 
 type WorkspaceDialogMode = 'join' | null
 
@@ -72,10 +75,10 @@ export function WorkspacesPage({ workspaces, enterWorkspace, createWorkspace, jo
 
   return <main className={`workspace-manager-page${isCreatingWorkspace ? ' workspace-create-mode' : ''}`}>
     {!isCreatingWorkspace && <header className="workspace-manager-topbar">
-      <a className="wordmark" href="/">policy<span>desk</span></a>
+      <a className="wordmark" href="/" aria-label={`${BRAND.name} home`}><BrandLogo /></a>
       <div className="workspace-manager-account"><details ref={profileMenuRef} className="profile-menu workspace-profile-menu">
         <summary className="profile-trigger" aria-label="Open profile menu"><span className="user-avatar">{getInitials(user?.name ?? 'User')}</span><span className="profile-trigger-copy"><strong>{user?.name ?? 'Account'}</strong><small>{user?.email ?? ''}</small></span><ChevronDown className="profile-chevron" /></summary>
-        <div className="profile-popover"><div className="profile-menu-heading"><span className="user-avatar">{getInitials(user?.name ?? 'User')}</span><span><strong>{user?.name ?? 'Account'}</strong><small>{user?.email ?? ''}</small></span></div><div className="profile-menu-divider" /><button type="button" className="profile-menu-item profile-signout" disabled={isSigningOut} onClick={() => void handleSignOut()}><LogOut />{isSigningOut ? 'Signing out…' : 'Sign out'}</button></div>
+        <div className="profile-popover"><div className="profile-menu-heading"><span className="user-avatar">{getInitials(user?.name ?? 'User')}</span><span><strong>{user?.name ?? 'Account'}</strong><small>{user?.email ?? ''}</small></span></div><div className="profile-menu-divider" /><ThemeToggle /><div className="profile-menu-divider" /><button type="button" className="profile-menu-item profile-signout" disabled={isSigningOut} onClick={() => void handleSignOut()}><LogOut />{isSigningOut ? 'Signing out…' : 'Sign out'}</button></div>
       </details></div>
     </header>}
 
