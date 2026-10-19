@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import dayjs, { type Dayjs } from 'dayjs'
-import { useNavigate } from 'react-router'
+import { useWorkspaceNavigate } from '@/libs/workspaces/navigation'
 import { Area, AreaChart, CartesianGrid, Cell, Line, Pie, PieChart, XAxis, YAxis } from 'recharts'
 import { Activity, ArrowRight, CalendarPlus, FileText, Plus, ShieldCheck, UsersRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,9 +10,9 @@ import { PolicyEditorDialog } from '@/components/policy-editor-dialog'
 import { PolicyStatusBadge } from '@/components/policy-status-badge'
 import { PolicySchedule } from '@/components/policy-schedule'
 import { SectionHeading } from '@/components/app-shell'
-import { usePolicies } from '@/stores/policy-store'
+import { usePolicies } from '@/libs/policies/hooks'
 import { useAuth } from '@/stores/auth-store'
-import { useLabels } from '@/stores/label-store'
+import { useLabels } from '@/libs/labels/hooks'
 import { getPolicyLifecycle, type PolicyActivityType, type PolicyDraftInput } from '@/libs/policies'
 import { toast } from 'sonner'
 import { PolicyLabelBadge } from '@/components/policy-label-badge'
@@ -25,7 +25,7 @@ export function OverviewPage() {
   const { policies, activity, isLoading, error, create } = usePolicies()
   const { user } = useAuth()
   const { labels, isLoading: labelsLoading } = useLabels()
-  const navigate = useNavigate()
+  const navigate = useWorkspaceNavigate()
   const [editorOpen, setEditorOpen] = useState(false)
   const [activityRange, setActivityRange] = useState('7')
   const [now, setNow] = useState(() => dayjs())

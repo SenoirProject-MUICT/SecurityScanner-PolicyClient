@@ -1,6 +1,6 @@
 # Policy Desk
 
-A small React client for managing policies and reusable labels. It supports local mock data and an optional Supabase data source.
+A React client for managing policies and reusable labels. Production requests go to the FastAPI backend; the client does not connect to Supabase directly. It also supports local mock data.
 
 ## Run locally
 
@@ -9,23 +9,22 @@ pnpm install
 pnpm dev
 ```
 
-If `VITE_DATA_MODE` is omitted, the app requests production mode. Production mode requires both Supabase credentials; if either is missing, it falls back to mock mode. Set `VITE_DATA_MODE=mock` to explicitly use local sample data and browser storage.
+If `VITE_DATA_MODE` is omitted, the app uses production API mode. Set `VITE_API_BASE_URL` to the FastAPI base URL (defaults to `http://localhost:8000/api/v1`). Set `VITE_DATA_MODE=mock` to use local sample data and browser storage.
 
 ## Connect Supabase
 
-Create an ignored `.env` file in `apps/client/`. Copy the variable names from [`.env.example`](.env.example), then fill in your Supabase project URL and **publishable** key:
+Create an ignored `.env` file in `apps/client/` and set the API URL:
 
 ```env
 VITE_DATA_MODE=production
-VITE_SUPABASE_URL=
-VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-Restart the Vite dev server after changing `.env`. The app resolves `VITE_DATA_MODE` to the `RuntimeMode` enum and exposes the resolved `isProd` value through the Zustand runtime-mode store. Production mode requires both Supabase values; without them, the app safely falls back to mock mode. The legacy value `supabase` remains accepted. If the credentials are present but a database request fails, the app surfaces that error instead of silently switching data sources.
+Restart the Vite dev server after changing `.env`. The app resolves `VITE_DATA_MODE` to the `RuntimeMode` enum and exposes `isProd` through the Zustand runtime-mode store. API errors are shown to the user; the app does not silently switch to mock data.
 
 The database baseline is in [`apps/backend/supabase/schema.sql`](../../apps/backend/supabase/schema.sql), with deployable, versioned SQL in [`apps/backend/supabase/migrations`](../../apps/backend/supabase/migrations). Create future database changes as a new migration; do not edit the production database directly. Existing installations may retain a legacy `skills` column; the client no longer reads or writes that column. Do not put a Supabase secret or service-role key in a `VITE_` variable.
 
-For the complete manual setup of database migrations, Auth redirects, the `workspace-members` Edge Function, and web app environment values, see [Supabase setup](../../docs/supabase-setup.md). The PowerShell setup script previews migrations and requires typing `APPLY` before changing the remote database.
+For backend keys, local API setup, Auth redirects, and database migrations, see [backend and Supabase setup](../../docs/supabase-setup.md). The PowerShell setup script previews migrations and requires typing `APPLY` before changing the remote database.
 
 ### Automate Supabase migrations
 
@@ -39,17 +38,9 @@ Configure these values in the GitHub repository's **production** environment:
 
 The first migration captures the current schema as a baseline. If the remote database was changed manually before migrations were introduced, reconcile its schema and migration history before running the deployment workflow.
 
-Mock and Supabase data are separate. Switching modes does not copy records between local storage and the database.
+Mock and production data are separate. Switching modes does not copy records between local storage and the database.
 
-### Keep Supabase database types in sync
-
-The shared client is typed from [`src/libs/supabase/database.types.ts`](src/libs/supabase/database.types.ts), which currently matches the checked-in schema. After applying a migration, regenerate and commit the type file from the repository root:
-
-```sh
-supabase --workdir apps/backend gen types typescript --linked --schema public > apps/client/src/libs/supabase/database.types.ts
-```
-
-The CLI is not configured in this checkout, so the committed SQL schema was used as the source for the initial type snapshot.
+FastAPI request and response models define the API contract. The client domain types live in `src/libs`; keep both sides aligned when changing an API response.
 
 ## Labels
 

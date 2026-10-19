@@ -1,14 +1,12 @@
 import { create } from 'zustand'
+import { queryClient } from '@/libs/api/query-client'
+import { authQueryKeys } from '@/libs/auth/query-keys'
 import { authService, type AuthUser } from '@/libs/auth'
 
 type AuthState = {
   user: AuthUser | null
   isLoading: boolean
   initialize: () => Promise<void>
-  signIn: (email: string, password: string) => Promise<AuthUser>
-  signUp: (email: string, password: string, name: string) => Promise<AuthUser | null>
-  updateProfile: (name: string) => Promise<AuthUser>
-  signOut: () => Promise<void>
 }
 
 let initialization: Promise<void> | null = null
@@ -19,32 +17,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   initialize: () => {
     if (!initialization) {
       initialization = (async () => {
-        authService.subscribe((user) => set({ user }))
-        try { set({ user: await authService.getCurrentUser() }) }
+        authService.subscribe((user) => {
+          const previousUser = useAuthStore.getState().user
+          if (previousUser && previousUser.id !== user?.id) queryClient.clear()
+          set({ user })
+        })
+        try { set({ user: await queryClient.fetchQuery({ queryKey: authQueryKeys.current(), queryFn: () => authService.getCurrentUser(), staleTime: 0 }) }) }
         catch { set({ user: null }) }
         finally { set({ isLoading: false }) }
       })()
     }
     return initialization
-  },
-  signIn: async (email, password) => {
-    const user = await authService.signIn(email, password)
-    set({ user })
-    return user
-  },
-  signUp: async (email, password, name) => {
-    const user = await authService.signUp(email, password, name)
-    if (user) set({ user })
-    return user
-  },
-  updateProfile: async (name) => {
-    const user = await authService.updateProfile(name)
-    set({ user })
-    return user
-  },
-  signOut: async () => {
-    await authService.signOut()
-    set({ user: null })
   },
 }))
 

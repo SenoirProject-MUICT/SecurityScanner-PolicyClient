@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useNavigate } from 'react-router'
+import { useWorkspaceNavigate } from '@/libs/workspaces/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { usePolicies } from '@/stores/policy-store'
+import { usePolicies } from '@/libs/policies/hooks'
 import { PolicyLabelBadge } from '@/components/policy-label-badge'
 import { PolicyStatusBadge } from '@/components/policy-status-badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -15,7 +15,7 @@ const WEEKDAYS = Array.from({ length: 7 }, (_, index) => new Intl.DateTimeFormat
 
 export function PolicySchedule({ isLoading = false }: { isLoading?: boolean }) {
   const { policies } = usePolicies()
-  const navigate = useNavigate()
+  const navigate = useWorkspaceNavigate()
   const [viewMonth, setViewMonth] = useState(() => { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), 1) })
   const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null)
   const today = startOfDay(new Date())

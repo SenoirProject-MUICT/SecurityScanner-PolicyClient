@@ -2,8 +2,10 @@
   "name": "@policydesk/backend",
   "private": true,
   "scripts": {
+    "dev": "node ../../scripts/run-backend.mjs dev",
     "supabase": "supabase --workdir .",
     "db:push": "supabase --workdir . db push",
-    "functions:deploy:members": "supabase --workdir . functions deploy workspace-members"
+    "api:dev": "node ../../scripts/run-backend.mjs dev",
+    "api:run": "node ../../scripts/run-backend.mjs run"
   }
 }

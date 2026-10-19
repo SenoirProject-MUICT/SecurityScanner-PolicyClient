@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useWorkspaceNavigate } from '@/libs/workspaces/navigation'
 import { toast } from 'sonner'
 import { PoliciesSection } from '@/components/policies-section'
 import { PolicyEditorDialog } from '@/components/policy-editor-dialog'
-import { usePolicies } from '@/stores/policy-store'
+import { usePolicies } from '@/libs/policies/hooks'
 import type { Policy, PolicyDraftInput } from '@/libs/policies'
 
 export function PoliciesPage() {
   const { policies, isLoading, error, create } = usePolicies()
-  const navigate = useNavigate()
+  const navigate = useWorkspaceNavigate()
   const [editorOpen, setEditorOpen] = useState(false)
 
   async function save(input: PolicyDraftInput): Promise<Policy> {

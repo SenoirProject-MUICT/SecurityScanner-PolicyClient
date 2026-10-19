@@ -4,15 +4,15 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { ArrowRight, Tag, Trash2 } from 'lucide-react'
 import { ContextMenu } from '@base-ui/react/context-menu'
-import { useNavigate } from 'react-router'
+import { useWorkspaceNavigate } from '@/libs/workspaces/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { SectionHeading } from '@/components/app-shell'
-import { useLabels } from '@/stores/label-store'
-import { usePolicies } from '@/stores/policy-store'
+import { useLabels } from '@/libs/labels/hooks'
+import { usePolicies } from '@/libs/policies/hooks'
 import { PolicyLabelBadge } from '@/components/policy-label-badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -22,7 +22,7 @@ type Values = z.infer<typeof schema>
 export function LabelsPage() {
   const { labels, labelRecords, create, update, remove } = useLabels()
   const { policies } = usePolicies()
-  const navigate = useNavigate()
+  const navigate = useWorkspaceNavigate()
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { name: '' }, mode: 'onBlur' })
   const editForm = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { name: '' }, mode: 'onBlur' })
   const [selected, setSelected] = useState<(typeof labelRecords)[number] | null>(null)

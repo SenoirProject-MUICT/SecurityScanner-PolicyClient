@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useWorkspaceNavigate } from '@/libs/workspaces/navigation'
 import { Command } from 'cmdk'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm, useWatch } from 'react-hook-form'
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { Policy, PolicyDraftInput } from '@/libs/policies'
-import { useLabels } from '@/stores/label-store'
+import { useLabels } from '@/libs/labels/hooks'
 import { PolicyLabelBadge } from '@/components/policy-label-badge'
 
 const schema = z.object({
@@ -33,7 +33,7 @@ const emptyValues: Values = { name: '', description: '', labels: [], status: 'ac
 
 export function PolicyEditorDialog({ open, policy, onOpenChange, onSave }: { open: boolean; policy: Policy | null; knownLabels?: string[]; onOpenChange: (open: boolean) => void; onSave: (input: PolicyDraftInput) => Promise<Policy> }) {
   const { labels } = useLabels()
-  const navigate = useNavigate()
+  const navigate = useWorkspaceNavigate()
   const [labelDialogOpen, setLabelDialogOpen] = useState(false)
   const [labelSearch, setLabelSearch] = useState('')
   const [activeLabelOption, setActiveLabelOption] = useState('')

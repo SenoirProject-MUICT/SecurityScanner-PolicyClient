@@ -1,9 +1,10 @@
 import { simulateMockLoading } from '@/libs/mock-delay'
 import type { CreatedWorkspaceJoinCode, WorkspaceJoinCode, WorkspaceMember, WorkspaceMemberService } from './types'
+import { WorkspaceAccessDeniedError } from './errors'
 
 const storageKey = 'policy-desk.mock-workspaces.v1'
 type MockWorkspace = { id: string; name: string; createdAt: string }
-type MockJoinCode = WorkspaceJoinCode & { codeHash: string }
+type MockJoinCode = WorkspaceJoinCode & { codeHash: string; code?: string }
 type MockData = { workspaces: MockWorkspace[]; members: WorkspaceMember[]; joinCodes: MockJoinCode[] }
 
 export const mockWorkspaceMemberService: WorkspaceMemberService = {
@@ -25,7 +26,7 @@ export const mockWorkspaceMemberService: WorkspaceMemberService = {
         writeData(data)
       }
     }
-    if (!active.length && data.members.some((member) => member.userId === user.id)) throw new Error('Workspace access is disabled. Contact a workspace admin.')
+    if (!active.length && data.members.some((member) => member.userId === user.id)) throw new WorkspaceAccessDeniedError()
     if (!active.some((member) => member.isDefault)) {
       active[0].isDefault = true
       writeData(data)
@@ -37,11 +38,12 @@ export const mockWorkspaceMemberService: WorkspaceMemberService = {
     const user = readCurrentUser()
     if (!user) throw new Error('Sign in before creating a workspace.')
     const data = readData()
-    if (data.members.some((member) => member.userId === user.id && member.status === 'active')) throw new Error('You already belong to a workspace.')
     const now = new Date().toISOString()
-    const workspaceId = getMockWorkspaceId(user.id)
+    const hasWorkspace = data.members.some((member) => member.userId === user.id && member.status === 'active')
+    const workspaceId = hasWorkspace ? `mock-workspace-${crypto.randomUUID()}` : getMockWorkspaceId(user.id)
     const workspace: MockWorkspace = { id: workspaceId, name: name.trim(), createdAt: now }
-    const owner: WorkspaceMember = { id: `mock-membership-${hash(user.id)}`, workspaceId, userId: user.id, email: user.email, name: user.name, role: 'admin', status: 'active', isDefault: true, createdAt: now }
+    const isDefault = !data.members.some((member) => member.userId === user.id && member.status === 'active' && member.isDefault)
+    const owner: WorkspaceMember = { id: `mock-membership-${hash(`${workspaceId}:${user.id}`)}`, workspaceId, userId: user.id, email: user.email, name: user.name, role: 'admin', status: 'active', isDefault, createdAt: now }
     data.workspaces.push(workspace)
     data.members.push(owner)
     writeData(data)
@@ -63,6 +65,30 @@ export const mockWorkspaceMemberService: WorkspaceMemberService = {
     else data.members.push(membership)
     writeData(data)
   },
+  async updateWorkspace(workspaceId, name) {
+    await simulateMockLoading()
+    const data = readData()
+    requireAdmin(data, workspaceId)
+    const workspace = data.workspaces.find((item) => item.id === workspaceId)
+    const cleaned = name.trim()
+    if (!workspace) throw new Error('This workspace could not be found.')
+    if (!cleaned || cleaned.length > 100) throw new Error('Enter a workspace name up to 100 characters.')
+    workspace.name = cleaned
+    writeData(data)
+  },
+  async deleteWorkspace(workspaceId) {
+    await simulateMockLoading()
+    const data = readData()
+    requireAdmin(data, workspaceId)
+    data.workspaces = data.workspaces.filter((item) => item.id !== workspaceId)
+    data.members = data.members.filter((item) => item.workspaceId !== workspaceId)
+    data.joinCodes = data.joinCodes.filter((item) => item.workspaceId !== workspaceId)
+    writeData(data)
+    removeWorkspaceRows('policy-desk.policies.v2', workspaceId)
+    removeWorkspaceRows('policy-desk.policies.v1', workspaceId)
+    removeWorkspaceRows('policy-desk.activity.v1', workspaceId)
+    removeWorkspaceRows('policy-desk.labels.v1', workspaceId)
+  },
   async listMembers(workspaceId) {
     await simulateMockLoading()
     const data = readData()
@@ -83,7 +109,7 @@ export const mockWorkspaceMemberService: WorkspaceMemberService = {
     await simulateMockLoading()
     const data = readData()
     requireAdmin(data, workspaceId)
-    return data.joinCodes.filter((item) => item.workspaceId === workspaceId).map(({ id, workspaceId: codeWorkspaceId, expiresAt, createdAt, revokedAt }) => ({ id, workspaceId: codeWorkspaceId, expiresAt, createdAt, revokedAt }))
+    return data.joinCodes.filter((item) => item.workspaceId === workspaceId).map(({ id, workspaceId: codeWorkspaceId, expiresAt, createdAt, revokedAt, code }) => ({ id, workspaceId: codeWorkspaceId, expiresAt, createdAt, revokedAt, codeAvailable: Boolean(code) }))
   },
   async createJoinCode(workspaceId, expiresInDays) {
     await simulateMockLoading()
@@ -92,10 +118,18 @@ export const mockWorkspaceMemberService: WorkspaceMemberService = {
     requireAdmin(data, workspaceId)
     const code = createCode()
     const now = new Date()
-    const joinCode: MockJoinCode = { id: `mock-join-code-${hash(`${workspaceId}:${code}`)}`, workspaceId, codeHash: hash(code), createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + expiresInDays * 86400000).toISOString(), revokedAt: null }
+    const joinCode: MockJoinCode = { id: `mock-join-code-${hash(`${workspaceId}:${code}`)}`, workspaceId, codeHash: hash(code), code, createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + expiresInDays * 86400000).toISOString(), revokedAt: null, codeAvailable: true }
     data.joinCodes.push(joinCode)
     writeData(data)
-    return { id: joinCode.id, workspaceId: joinCode.workspaceId, expiresAt: joinCode.expiresAt, createdAt: joinCode.createdAt, revokedAt: null, code } satisfies CreatedWorkspaceJoinCode
+    return { id: joinCode.id, workspaceId: joinCode.workspaceId, expiresAt: joinCode.expiresAt, createdAt: joinCode.createdAt, revokedAt: null, code, codeAvailable: true } satisfies CreatedWorkspaceJoinCode
+  },
+  async revealJoinCode(workspaceId, codeId) {
+    await simulateMockLoading()
+    const data = readData()
+    requireAdmin(data, workspaceId)
+    const joinCode = data.joinCodes.find((item) => item.workspaceId === workspaceId && item.id === codeId)
+    if (!joinCode?.code) throw new Error('This code cannot be revealed. It was created before code recovery was enabled.')
+    return joinCode.code
   },
   async revokeJoinCode(workspaceId, codeId) {
     await simulateMockLoading()
@@ -162,6 +196,15 @@ function readData(): MockData {
 function writeData(data: MockData) {
   try { window.localStorage.setItem(storageKey, JSON.stringify(data)) }
   catch { throw new Error('Your browser could not save workspace members. Check its storage settings and try again.') }
+}
+function removeWorkspaceRows(key: string, workspaceId: string) {
+  try {
+    const stored = window.localStorage.getItem(key)
+    if (!stored) return
+    const rows: unknown = JSON.parse(stored)
+    if (!Array.isArray(rows)) return
+    window.localStorage.setItem(key, JSON.stringify(rows.filter((row) => !row || typeof row !== 'object' || (row as { workspaceId?: unknown }).workspaceId !== workspaceId)))
+  } catch { throw new Error('Could not remove all local workspace data. Try again.') }
 }
 function hash(value: string) { let result = 2166136261; for (const character of value) result = Math.imul(result ^ character.charCodeAt(0), 16777619); return (result >>> 0).toString(36) }
 

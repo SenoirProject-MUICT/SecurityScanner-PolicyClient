@@ -10,7 +10,7 @@ import { SectionHeading } from '@/components/app-shell'
 import { PolicyStatusBadge } from '@/components/policy-status-badge'
 import { getPolicyLifecycle, type Policy } from '@/libs/policies'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useLabels } from '@/stores/label-store'
+import { useLabels } from '@/libs/labels/hooks'
 import { PolicyLabelBadge } from '@/components/policy-label-badge'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 

@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionHeading } from '@/components/app-shell'
@@ -7,7 +7,7 @@ import { PolicyStatusBadge } from '@/components/policy-status-badge'
 import type { Policy, PolicyStatus } from '@/libs/policies'
 import { PolicyLabelBadge } from '@/components/policy-label-badge'
 
-export function PolicyDetail({ policy, policies, onBack, onOpenPolicy, onEdit, onDelete, onToggle }: { policy: Policy; policies: Policy[]; onBack: () => void; onOpenPolicy: (policy: Policy) => void; onEdit: () => void; onDelete: () => void; onToggle: (status: PolicyStatus) => void }) {
+export function PolicyDetail({ policy, policies, isStatusUpdating = false, onBack, onOpenPolicy, onEdit, onDelete, onToggle }: { policy: Policy; policies: Policy[]; isStatusUpdating?: boolean; onBack: () => void; onOpenPolicy: (policy: Policy) => void; onEdit: () => void; onDelete: () => void; onToggle: (status: PolicyStatus) => void }) {
   const related = policies.filter((candidate) => candidate.id !== policy.id && candidate.labels.some((label) => policy.labels.some((tag) => tag.toLocaleLowerCase() === label.toLocaleLowerCase()))).slice(0, 4)
   return <>
     <button className="back-link" onClick={onBack}><ArrowLeft size={15} /> Back to policies</button>
@@ -15,7 +15,7 @@ export function PolicyDetail({ policy, policies, onBack, onOpenPolicy, onEdit, o
     <div className="detail-layout">
       <section className="detail-main">
         <Card className="detail-card policy-content-card"><CardContent>
-          <div className="policy-status-strip"><div className="policy-status-copy"><p className="section-eyebrow">POLICY STATUS</p><PolicyStatusBadge policy={policy} /><p className="policy-effective-hint">{getEffectiveHint(policy)}</p></div><label className="status-switch-label"><span>{policy.status === 'active' ? 'Turn off' : 'Turn on'}</span><Switch checked={policy.status === 'active'} onCheckedChange={(checked) => onToggle(checked ? 'active' : 'inactive')} aria-label={policy.status === 'active' ? 'Turn policy off' : 'Turn policy on'} /></label></div>
+          <div className="policy-status-strip"><div className="policy-status-copy"><p className="section-eyebrow">POLICY STATUS</p><PolicyStatusBadge policy={policy} /><p className="policy-effective-hint">{getEffectiveHint(policy)}</p></div><label className="status-switch-label"><span>{isStatusUpdating ? 'Updating…' : policy.status === 'active' ? 'Turn off' : 'Turn on'}</span>{isStatusUpdating && <LoaderCircle className="policy-status-spinner" aria-hidden="true" />}<Switch checked={policy.status === 'active'} disabled={isStatusUpdating} onCheckedChange={(checked) => onToggle(checked ? 'active' : 'inactive')} aria-label={isStatusUpdating ? 'Updating policy status' : policy.status === 'active' ? 'Turn policy off' : 'Turn policy on'} /></label></div>
           <div className="policy-overview-block"><p className="section-eyebrow">OVERVIEW</p><p className="detail-summary">{policy.description || 'No summary has been written for this policy. Add one to help teammates understand when it applies.'}</p></div>
         </CardContent></Card>
       </section>

@@ -1,17 +1,23 @@
 import { useState, type FormEvent } from 'react'
-import { AlertCircle, ArrowLeft, ArrowRight, Building2, KeyRound } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { AlertCircle, ArrowLeft, ArrowRight, Building2, KeyRound, LogOut, ShieldAlert } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/stores/auth-store'
-import { useWorkspaceStore } from '@/stores/workspace-store'
+import type { useWorkspaces } from '@/libs/workspaces/hooks'
+import { useAuthMutations } from '@/libs/auth/hooks'
 
 type SetupMode = 'create' | 'join'
 
-export function WorkspaceSetupPage({ loadError = '' }: { loadError?: string }) {
+type WorkspaceSetupProps = Pick<ReturnType<typeof useWorkspaces>, 'createWorkspace' | 'joinWorkspace' | 'isMutating'> & {
+  loadError?: string
+  onRetry: ReturnType<typeof useWorkspaces>['refetch']
+}
+
+export function WorkspaceSetupPage({ loadError = '', createWorkspace, joinWorkspace, onRetry, isMutating }: WorkspaceSetupProps) {
   const { user } = useAuth()
-  const { createWorkspace, joinWorkspace, initialize, isMutating } = useWorkspaceStore()
   const [mode, setMode] = useState<SetupMode | null>(null)
   const [workspaceName, setWorkspaceName] = useState('')
   const [joinCode, setJoinCode] = useState('')
@@ -36,7 +42,7 @@ export function WorkspaceSetupPage({ loadError = '' }: { loadError?: string }) {
       <h1>Where should we take you?</h1>
       <p className="workspace-setup-lede">Create a workspace for your team, or join one with a code from its admin.</p>
 
-      {loadError ? <Card className="workspace-setup-error"><CardContent><Alert variant="destructive"><AlertDescription>{loadError}</AlertDescription></Alert><Button variant="outline" disabled={isMutating} onClick={() => void initialize()}>Try again</Button></CardContent></Card> : mode ? <Card className="workspace-setup-form-card"><CardContent>
+      {loadError ? <Card className="workspace-setup-error"><CardContent><Alert variant="destructive"><AlertDescription>{loadError}</AlertDescription></Alert><Button variant="outline" disabled={isMutating} onClick={() => void onRetry()}>Try again</Button></CardContent></Card> : mode ? <Card className="workspace-setup-form-card"><CardContent>
         <button className="workspace-setup-back" type="button" onClick={() => { setMode(null); setSubmitError('') }}><ArrowLeft aria-hidden="true" /> Back to options</button>
         <h2>{mode === 'create' ? 'Create a workspace' : 'Join a workspace'}</h2>
         <p>{mode === 'create' ? 'You’ll be its admin and can invite your team.' : 'Enter the time-limited code shared by a workspace admin.'}</p>
@@ -50,6 +56,39 @@ export function WorkspaceSetupPage({ loadError = '' }: { loadError?: string }) {
         <button type="button" className="workspace-setup-option" onClick={() => setMode('join')}><span className="workspace-setup-option-icon"><KeyRound aria-hidden="true" /></span><span><strong>Join with a code</strong><small>Use a code shared by an existing workspace admin.</small></span><ArrowRight className="workspace-setup-option-arrow" aria-hidden="true" /></button>
       </div>}
       <p className="workspace-setup-account">Signed in as {user?.email}</p>
+    </section>
+  </main>
+}
+
+export function WorkspaceAccessDeniedPage({ onRetry }: { onRetry: WorkspaceSetupProps['onRetry'] }) {
+  const navigate = useNavigate()
+  const { signOut, isPending } = useAuthMutations()
+  const [retrying, setRetrying] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
+
+  async function retryAccess() {
+    setRetrying(true)
+    try { await onRetry() } finally { setRetrying(false) }
+  }
+
+  async function handleSignOut() {
+    setSignOutError('')
+    try { await signOut(); navigate('/login', { replace: true }) }
+    catch (cause) { setSignOutError(cause instanceof Error ? cause.message : 'Could not sign out. Try again.') }
+  }
+
+  return <main className="workspace-setup-page">
+    <a className="wordmark" href="/">policy<span>desk</span></a>
+    <section className="workspace-setup-content workspace-access-denied">
+      <span className="workspace-setup-mark"><ShieldAlert aria-hidden="true" /></span>
+      <p className="section-eyebrow">WORKSPACE ACCESS</p>
+      <h1>Access is disabled</h1>
+      <p className="workspace-setup-lede">A workspace admin needs to reactivate your membership. Once they do, check your access again.</p>
+      {signOutError && <Alert variant="destructive" className="workspace-setup-alert"><AlertCircle aria-hidden="true" /><AlertDescription>{signOutError}</AlertDescription></Alert>}
+      <div className="workspace-access-actions">
+        <Button className="workspace-check-access" variant="outline" disabled={retrying} onClick={() => void retryAccess()}>{retrying ? 'Checking access…' : 'Check access'}</Button>
+        <Button className="primary-action" disabled={isPending} onClick={() => void handleSignOut()}><LogOut data-icon="inline-start" />{isPending ? 'Signing out…' : 'Sign out'}</Button>
+      </div>
     </section>
   </main>
 }

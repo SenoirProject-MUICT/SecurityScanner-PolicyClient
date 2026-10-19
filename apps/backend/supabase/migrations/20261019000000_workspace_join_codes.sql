@@ -1,5 +1,5 @@
 -- Store only hashes of time-limited workspace join codes. The authenticated
--- Edge Function is the only interface for creating, listing, revoking, or
+-- Backend API is the only interface for creating, listing, revoking, or
 -- redeeming codes; no direct client policies are granted.
 create table if not exists public.workspace_join_codes (
   id uuid primary key default gen_random_uuid(),

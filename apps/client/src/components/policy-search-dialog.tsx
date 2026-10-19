@@ -3,13 +3,13 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { Command } from 'cmdk'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Search, ArrowUp, ArrowDown, CornerDownLeft, FileText } from 'lucide-react'
-import { useNavigate } from 'react-router'
-import { usePolicies } from '@/stores/policy-store'
+import { useWorkspaceNavigate } from '@/libs/workspaces/navigation'
+import { usePolicies } from '@/libs/policies/hooks'
 import { PolicyStatusBadge } from '@/components/policy-status-badge'
 
 export function PolicySearchDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { policies } = usePolicies()
-  const navigate = useNavigate()
+  const navigate = useWorkspaceNavigate()
   const [dialogOpen, setDialogOpen] = useState(open)
   const [query, setQuery] = useState('')
   const [activePolicyId, setActivePolicyId] = useState('')

@@ -19,6 +19,16 @@ dist-ssr
 apps/backend/supabase/.temp/
 apps/backend/supabase/.branches/
 
+# Python / uv
+.venv/
+**/.venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.ty/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -43,18 +43,20 @@ create unique index if not exists workspace_memberships_one_default_per_user_idx
 create unique index if not exists workspace_memberships_workspace_email_unique_idx
   on public.workspace_memberships (workspace_id, lower(email)) where email is not null;
 
--- Invitation codes are generated and validated in the workspace Edge Function.
--- Only SHA-256 hashes are stored; clients access this table through that function.
+-- Invitation codes are generated and validated by the FastAPI workspace service.
+-- Codes are hashed for lookup and encrypted for admin-only recovery through the API.
 create table if not exists public.workspace_join_codes (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references public.workspaces(id) on delete cascade,
   code_hash text not null unique check (code_hash ~ '^[0-9a-f]{64}$'),
+  code_ciphertext text,
   created_by uuid references auth.users(id) on delete set null,
   expires_at timestamptz not null,
   revoked_at timestamptz,
   created_at timestamptz not null default now(),
   constraint workspace_join_codes_expiration_valid check (expires_at > created_at)
 );
+alter table public.workspace_join_codes add column if not exists code_ciphertext text;
 create index if not exists workspace_join_codes_workspace_created_idx
   on public.workspace_join_codes (workspace_id, created_at desc);
 alter table public.workspace_join_codes enable row level security;

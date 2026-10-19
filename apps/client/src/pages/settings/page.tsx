@@ -9,14 +9,16 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/c
 import { Input } from '@/components/ui/input'
 import { SectionHeading } from '@/components/app-shell'
 import { useAuth } from '@/stores/auth-store'
-import { supabaseSettings } from '@/libs/supabase'
+import { useAuthMutations } from '@/libs/auth/hooks'
+import { apiBaseUrl } from '@/libs/api/client'
 import { useRuntimeModeStore } from '@/stores/runtime-mode-store'
 
 const profileSchema = z.object({ name: z.string().trim().min(2, 'Enter a name with at least 2 characters.').max(60, 'Keep your name under 60 characters.') })
 type ProfileValues = z.infer<typeof profileSchema>
 
 export function SettingsPage() {
-  const { user, updateProfile } = useAuth()
+  const { user } = useAuth()
+  const { updateProfile } = useAuthMutations()
   const isProd = useRuntimeModeStore((state) => state.isProd)
   const form = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: { name: user?.name ?? '' } })
 
@@ -42,23 +44,23 @@ export function SettingsPage() {
               <Field><FieldLabel htmlFor="profile-email">Email address</FieldLabel><Input id="profile-email" value={user?.email ?? ''} readOnly disabled /><FieldDescription>Your sign-in email is managed by your authentication provider.</FieldDescription></Field>
               <Field data-invalid={form.formState.errors.name ? true : undefined}><FieldLabel htmlFor="profile-name">Display name</FieldLabel><Input id="profile-name" autoComplete="name" aria-invalid={Boolean(form.formState.errors.name)} {...form.register('name')} />{form.formState.errors.name && <FieldError errors={[form.formState.errors.name]} />}</Field>
             </FieldGroup>
-            <div className="settings-actions"><span>Signed in with {isProd ? 'Supabase Auth' : 'mock authentication'}</span><Button type="submit" className="primary-action" disabled={form.formState.isSubmitting || !form.formState.isDirty}>{form.formState.isSubmitting ? 'Saving…' : 'Save profile'}</Button></div>
+            <div className="settings-actions"><span>Signed in with {isProd ? 'PolicyDesk API' : 'mock authentication'}</span><Button type="submit" className="primary-action" disabled={form.formState.isSubmitting || !form.formState.isDirty}>{form.formState.isSubmitting ? 'Saving…' : 'Save profile'}</Button></div>
           </form>
         </CardContent>
       </Card>
 
       <Card className="settings-card connection-settings">
-        <CardHeader className="settings-card-heading"><CardTitle>Data connection</CardTitle><CardDescription>Policy data and login use the same configured connection mode.</CardDescription></CardHeader>
+        <CardHeader className="settings-card-heading"><CardTitle>Data connection</CardTitle><CardDescription>Policy data and login are handled by the PolicyDesk API.</CardDescription></CardHeader>
         <CardContent>
-          <div className="settings-connection-status"><span className={`status-dot ${isProd ? 'is-connected' : ''}`} /><div><strong>{isProd ? 'Supabase connected' : 'Local mock mode'}</strong><span>{isProd ? 'Your policies and account are stored in Supabase.' : 'Your policies and account stay in this browser for this demo.'}</span></div></div>
-          <div className="settings-key-list"><ConnectionRow label="Project URL" configured={supabaseSettings.urlConfigured} /><ConnectionRow label="Publishable key" configured={supabaseSettings.keyConfigured} /></div>
-          <p className="settings-hint">Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> to your local environment file, then restart the app to use Supabase.</p>
+          <div className="settings-connection-status"><span className={`status-dot ${isProd ? 'is-connected' : ''}`} /><div><strong>{isProd ? 'PolicyDesk API mode' : 'Local mock mode'}</strong><span>{isProd ? 'Your browser sends requests to the backend. Supabase credentials stay on the server.' : 'Your policies and account stay in this browser for this demo.'}</span></div></div>
+          <div className="settings-key-list"><ConnectionRow label="API endpoint" configured={isProd} value={isProd ? apiBaseUrl : undefined} /></div>
+          <p className="settings-hint">Configure <code>VITE_API_BASE_URL</code> in <code>apps/client/.env</code> and Supabase server keys in <code>apps/backend/.env</code>.</p>
         </CardContent>
       </Card>
     </div>
   </>
 }
 
-function ConnectionRow({ label, configured }: { label: string; configured: boolean }) {
-  return <div className="settings-key-row"><span>{label}</span><span className={`settings-key-state ${configured ? 'is-ready' : ''}`}><i />{configured ? 'Added' : 'Not added'}</span></div>
+function ConnectionRow({ label, configured, value }: { label: string; configured: boolean; value?: string }) {
+  return <div className="settings-key-row"><span>{label}</span><span className={`settings-key-state ${configured ? 'is-ready' : ''}`}><i />{value ?? (configured ? 'Added' : 'Not added')}</span></div>
 }

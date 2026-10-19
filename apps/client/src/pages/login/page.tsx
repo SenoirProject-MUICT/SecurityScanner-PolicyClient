@@ -7,13 +7,15 @@ import { ArrowRight, Check, Fingerprint, LockKeyhole } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/stores/auth-store'
+import { useAuthMutations } from '@/libs/auth/hooks'
 import { useRuntimeModeStore } from '@/stores/runtime-mode-store'
 
 const schema = z.object({ name: z.string().optional(), email: z.email('Enter a valid email address.'), password: z.string().min(8, 'Use at least 8 characters.') })
 type Values = z.infer<typeof schema>
 
 export function LoginPage() {
-  const { user, signIn, signUp } = useAuth()
+  const { user } = useAuth()
+  const { signIn, signUp } = useAuthMutations()
   const isProd = useRuntimeModeStore((state) => state.isProd)
   const navigate = useNavigate()
   const location = useLocation()
@@ -51,12 +53,12 @@ export function LoginPage() {
         {isCreating && <label className="login-field">Your name<Input {...form.register('name')} autoComplete="name" placeholder="e.g. Alex Morgan" /></label>}
         <label className="login-field">Email address<Input {...form.register('email')} type="email" autoComplete="email" placeholder="you@company.com" aria-invalid={Boolean(form.formState.errors.email)} />{form.formState.errors.email && <small>{form.formState.errors.email.message}</small>}</label>
         <label className="login-field">Password<Input {...form.register('password')} type="password" autoComplete={isCreating ? 'new-password' : 'current-password'} placeholder="At least 8 characters" aria-invalid={Boolean(form.formState.errors.password)} />{form.formState.errors.password && <small>{form.formState.errors.password.message}</small>}</label>
-        {!isCreating && <button type="button" className="forgot-link" onClick={() => setMessage('Password reset is available after Supabase email settings are configured.')}>Forgot password?</button>}
+        {!isCreating && <button type="button" className="forgot-link" onClick={() => setMessage('Password recovery is not available yet. Contact your workspace administrator.')}>Forgot password?</button>}
         <Button type="submit" className="login-submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? 'One moment…' : isCreating ? 'Create account' : 'Sign in'}<ArrowRight size={15} /></Button>
       </form>
       <div className="login-switch">{isCreating ? 'Already have an account?' : 'New to Policy Desk?'} <button type="button" onClick={() => { setIsCreating((value) => !value); setError(''); setMessage('') }}>{isCreating ? 'Sign in' : 'Create an account'}</button></div>
       {!isProd && <><div className="login-divider"><span>OR</span></div><Button variant="outline" className="demo-button" onClick={() => void continueAsDemo()}><Fingerprint size={15} /> Continue as demo user</Button><p className="demo-hint"><LockKeyhole size={12} /> Mock sign-in stays on this device. Any valid email works.</p></>}
-      {isProd && <p className="demo-hint"><LockKeyhole size={12} /> Secured by your Supabase Auth project.</p>}
+      {isProd && <p className="demo-hint"><LockKeyhole size={12} /> Authentication is securely handled by PolicyDesk.</p>}
     </div><span className="login-legal">By continuing, you agree to use generated policy drafts as a starting point for review.</span></section>
   </main>
 }

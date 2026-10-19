@@ -1,5 +1,3 @@
-import { supabaseSettings } from '@/libs/supabase'
-
 export const RuntimeMode = {
   Mock: 'mock',
   Production: 'production',
@@ -7,12 +5,8 @@ export const RuntimeMode = {
 
 export type RuntimeMode = (typeof RuntimeMode)[keyof typeof RuntimeMode]
 
-/** Resolve once from build-time configuration; production requires valid Supabase credentials. */
+/** Production API mode is the default; use VITE_DATA_MODE=mock for local sample data. */
 export function resolveRuntimeMode(requestedMode: string | undefined): RuntimeMode {
   const normalizedMode = requestedMode?.trim().toLowerCase() || RuntimeMode.Production
-  const productionRequested = normalizedMode === RuntimeMode.Production || normalizedMode === 'supabase'
-
-  return productionRequested && supabaseSettings.configured
-    ? RuntimeMode.Production
-    : RuntimeMode.Mock
+  return normalizedMode === RuntimeMode.Mock ? RuntimeMode.Mock : RuntimeMode.Production
 }

@@ -3,7 +3,10 @@
   "private": true,
   "packageManager": "pnpm@10.17.0",
   "scripts": {
+    "install:all": "pnpm install && node scripts/install-backend.mjs",
     "dev": "pnpm --filter @policydesk/client dev",
+    "dev:all": "pnpm --parallel --filter @policydesk/client --filter @policydesk/backend dev",
+    "dev:backend": "pnpm --filter @policydesk/backend dev",
     "build": "pnpm --filter @policydesk/client build",
     "lint": "pnpm --filter @policydesk/client lint",
     "supabase": "pnpm --filter @policydesk/backend supabase"
