@@ -234,7 +234,8 @@ def _invite(admin: Any, workspace_id: str, user: CurrentUser, email_value: str |
         raise HTTPException(status_code=422, detail="Enter a valid email address.")
     if role not in ("admin", "member"):
         raise HTTPException(status_code=422, detail="Choose either admin or member.")
-    duplicate = admin.table("workspace_memberships").select("id").eq("workspace_id", workspace_id).eq("email", email).maybe_single().execute().data
+    duplicate_rows = admin.table("workspace_memberships").select("id").eq("workspace_id", workspace_id).eq("email", email).limit(1).execute().data or []
+    duplicate = duplicate_rows[0] if duplicate_rows else None
     if duplicate:
         raise HTTPException(status_code=409, detail="This email already belongs to the workspace.")
     auth_user = _find_auth_user(email)

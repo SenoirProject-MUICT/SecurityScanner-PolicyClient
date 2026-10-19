@@ -1223,7 +1223,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .workspace-setup-account { margin: 20px 0 0; color: #829087; font-size: 11px; }
 
 .workspace-manager-page { min-height: 100vh; padding: 0 28px 64px; background: radial-gradient(ellipse at 50% 0%, rgba(86, 139, 107, .08), transparent 42%), #f5f7f4; color: #20382b; }
-.workspace-manager-topbar { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 18px; max-width: 1120px; margin: 0 auto; border-bottom: 1px solid #e2e9e2; }
+.workspace-manager-topbar { position: relative; z-index: 20; min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 18px; max-width: 1120px; margin: 0 auto; border-bottom: 1px solid #e2e9e2; }
 .workspace-manager-account { display: flex; align-items: center; gap: 16px; color: #718077; font-size: 12px; }
 .workspace-manager-content { width: min(100%, 1120px); margin: 58px auto 0; }
 .workspace-manager-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
