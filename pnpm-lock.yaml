@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/backend: {}
+
+  apps/client:
     dependencies:
       '@base-ui/react':
         specifier: ^1.9.0

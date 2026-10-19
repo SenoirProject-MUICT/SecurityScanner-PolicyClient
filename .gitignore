@@ -16,8 +16,8 @@ dist-ssr
 !.env.example
 
 # Supabase CLI local state (project link and local service versions)
-supabase/.temp/
-supabase/.branches/
+apps/backend/supabase/.temp/
+apps/backend/supabase/.branches/
 
 # Editor directories and files
 .vscode/*

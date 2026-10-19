@@ -13,13 +13,13 @@ This backlog turns the proposed review-platform plans into individual Jira ticke
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Policy create/edit, draft/active/inactive lifecycle, date ranges, owner/creator and labels | DONE (existing) | `src/libs/policies/`, `src/components/policy-editor-dialog.tsx`, `src/components/policy-detail.tsx`, `supabase/schema.sql` |
-| Reusable organization labels | DONE (existing) | `src/libs/labels/`, `src/pages/labels/page.tsx` |
-| Email/password login and mock login | DONE (existing) | `src/libs/auth/`, `src/stores/auth-store.ts`, `src/pages/login/page.tsx` |
-| Mock and Supabase data mode | DONE (existing) | `src/libs/*/mock.ts`, `src/libs/*/supabase.ts`, `.env.example` |
-| Policy schedule and policy activity | DONE (existing) | `src/components/policy-schedule.tsx`, `src/pages/overview/page.tsx` |
-| Workspace creation/join setup and workspace selection | DONE (code/mock; production deployment pending) | `src/pages/workspace-setup/page.tsx`, `src/stores/workspace-store.ts`, `src/libs/workspaces/`, `supabase/functions/workspace-members/` |
-| Workspace roles and member management | DONE (code/mock; production deployment pending) | `src/pages/team/page.tsx`, `src/libs/workspaces/`, `supabase/schema.sql`, `supabase/migrations/`, `supabase/functions/workspace-members/`; see `.agents/knowledges/review-platform-roles-plan.md` |
+| Policy create/edit, draft/active/inactive lifecycle, date ranges, owner/creator and labels | DONE (existing) | `apps/client/src/libs/policies/`, `apps/client/src/components/policy-editor-dialog.tsx`, `apps/client/src/components/policy-detail.tsx`, `apps/backend/supabase/schema.sql` |
+| Reusable organization labels | DONE (existing) | `apps/client/src/libs/labels/`, `apps/client/src/pages/labels/page.tsx` |
+| Email/password login and mock login | DONE (existing) | `apps/client/src/libs/auth/`, `apps/client/src/stores/auth-store.ts`, `apps/client/src/pages/login/page.tsx` |
+| Mock and Supabase data mode | DONE (existing) | `apps/client/src/libs/*/mock.ts`, `apps/client/src/libs/*/supabase.ts`, `.env.example` |
+| Policy schedule and policy activity | DONE (existing) | `apps/client/src/components/policy-schedule.tsx`, `apps/client/src/pages/overview/page.tsx` |
+| Workspace creation/join setup and workspace selection | DONE (code/mock; production deployment pending) | `apps/client/src/pages/workspace-setup/page.tsx`, `apps/client/src/stores/workspace-store.ts`, `apps/client/src/libs/workspaces/`, `apps/backend/supabase/functions/workspace-members/` |
+| Workspace roles and member management | DONE (code/mock; production deployment pending) | `apps/client/src/pages/team/page.tsx`, `apps/client/src/libs/workspaces/`, `apps/backend/supabase/schema.sql`, `apps/backend/supabase/migrations/`, `apps/backend/supabase/functions/workspace-members/`; see `.agents/knowledges/review-platform-roles-plan.md` |
 | Optional repository onboarding, repository links, review queue, vulnerability classifications, policy approval | Not implemented | Optional repository path is still proposed in `.agents/knowledges/first-entry-user-story.md`; see `.agents/knowledges/review-platform-roadmap.md` |
 
 Workspace membership and admin/member roles are implemented, while production migration/function deployment remains a manual setup task. Existing policy labels are not the vulnerability taxonomy needed for MR findings. The policy date schedule is not an MR review queue.
@@ -191,7 +191,7 @@ Policy-only users must be able to use the product without connecting a repositor
   - PR uniqueness prevents duplicates across retries; file records are replaced/upserted safely when the PR head SHA changes.
   - Changed-file rows include path, previous path for renames, status, additions, deletions, total changes, optional patch, and optional blob SHA.
   - RLS scopes user-visible records to the workspace; credentials/private signing material are not in browser-readable rows.
-  - Migration strategy works alongside the current `supabase/schema.sql` setup.
+  - Migration strategy works alongside the current `apps/backend/supabase/schema.sql` setup.
 - **Dependencies:** PD-ORG-2.
 
 ### PD-GH-3 — Implement secure GitHub App installation callback and connection lifecycle
@@ -458,7 +458,7 @@ Policy-only users must be able to use the product without connecting a repositor
 - **Priority:** High before production rollout
 - **Description:** Configure local and deployed callback, sync, and webhook functions with the GitHub App secrets.
 - **Acceptance criteria:**
-  - Local secrets live in ignored `supabase/functions/.env`; production secrets are configured through Supabase Edge Function secrets.
+  - Local secrets live in ignored `apps/backend/supabase/functions/.env`; production secrets are configured through Supabase Edge Function secrets.
   - Secret names and rotation steps are documented; no secret is committed or exposed in Vite env.
   - Callback, authenticated sync, and public signature-verified webhook have distinct authentication rules.
   - A test GitHub installation completes end-to-end sync in a non-production environment.

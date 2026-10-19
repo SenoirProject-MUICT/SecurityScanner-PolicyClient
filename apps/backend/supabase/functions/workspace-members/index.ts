@@ -1,6 +1,6 @@
 import { withSupabase } from 'npm:@supabase/server@1'
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
-import type { Database } from '../../../src/libs/supabase/database.types.ts'
+import type { Database } from '../../../../../apps/client/src/libs/supabase/database.types.ts'
 
 type Role = 'admin' | 'member'
 type MemberStatus = 'active' | 'invited' | 'disabled'

@@ -21,7 +21,7 @@ if ($AppBaseUrl -and $AppBaseUrl.Scheme -ne 'https' -and $AppBaseUrl.Host -ne 'l
 
 function Invoke-Supabase {
   param([string[]]$CliArguments)
-  & supabase @CliArguments
+  & supabase --workdir 'apps/backend' @CliArguments
   if ($LASTEXITCODE -ne 0) {
     throw "Supabase CLI failed with exit code $LASTEXITCODE."
   }
@@ -55,7 +55,7 @@ if ($AppBaseUrl) {
 Invoke-Supabase @('functions', 'deploy', 'workspace-members', '--project-ref', $ProjectRef)
 
 Write-Host ''
-Write-Host 'Supabase setup completed. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in .env, then restart the app.'
+Write-Host 'Supabase setup completed. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in apps/client/.env, then restart the app.'
 if ($AppBaseUrl) {
   Write-Host 'Also allow the app URL in Supabase Dashboard > Authentication > URL Configuration.'
 }

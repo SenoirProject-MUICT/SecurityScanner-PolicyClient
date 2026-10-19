@@ -4,7 +4,7 @@
 
 Not implemented. Current policy statuses are `draft`, `active`, and `inactive`; there is no pending approval status, approver identity, approval history, or enforcement that only an admin can activate a submitted policy.
 
-References: [policy lifecycle helpers](../../src/libs/policies/status.ts), [policy repository types](../../src/libs/policies/types.ts), [policy detail UI](../../src/components/policy-detail.tsx), [Supabase schema](../../supabase/schema.sql).
+References: [policy lifecycle helpers](../../apps/client/src/libs/policies/status.ts), [policy repository types](../../apps/client/src/libs/policies/types.ts), [policy detail UI](../../apps/client/src/components/policy-detail.tsx), [Supabase schema](../../apps/backend/supabase/schema.sql).
 
 ## Dependencies
 

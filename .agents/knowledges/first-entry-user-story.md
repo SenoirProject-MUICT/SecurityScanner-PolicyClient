@@ -12,8 +12,8 @@ Policy Desk serves two valid needs: teams who only manage policies and teams who
 
 ## First entry experience
 
-1. The user signs in or creates an account. The current auth UI is in [src/pages/login/page.tsx](../../src/pages/login/page.tsx); workspace protection and loading are handled by [src/app/router.tsx](../../src/app/router.tsx).
-2. If the user has no workspace, [the workspace setup page](../../src/pages/workspace-setup/page.tsx) offers **Create a workspace** and **Join with a code**. Workspace creation is explicit; signup does not silently create a personal workspace. Users with a selected workspace continue to the app.
+1. The user signs in or creates an account. The current auth UI is in [apps/client/src/pages/login/page.tsx](../../apps/client/src/pages/login/page.tsx); workspace protection and loading are handled by [apps/client/src/app/router.tsx](../../apps/client/src/app/router.tsx).
+2. If the user has no workspace, [the workspace setup page](../../apps/client/src/pages/workspace-setup/page.tsx) offers **Create a workspace** and **Join with a code**. Workspace creation is explicit; signup does not silently create a personal workspace. Users with a selected workspace continue to the app.
 3. Explain the two paths in plain language:
    - **Manage policies** — create, organize, schedule, and maintain policies. No repository connection required.
    - **Review repository changes** — connect GitHub or GitLab to import pull/merge requests and review detected skill findings.

@@ -19,21 +19,21 @@ From the repository root in PowerShell:
 ./scripts/setup-supabase.ps1 -ProjectRef "suiqchyqbzgtvptdaqkf" -AppBaseUrl "https://your-policydesk-app.example"
 ```
 
-The script links the CLI to the selected project, prints migration history, and runs `supabase db push --dry-run`. It pauses before applying any pending migrations; type `APPLY` only after reviewing the preview and confirming it targets the intended project. If you decline, it skips both database changes and function deployment.
+The script links the CLI to the selected project, prints migration history, and runs `supabase db push --dry-run` from `apps/backend`. It pauses before applying any pending migrations; type `APPLY` only after reviewing the preview and confirming it targets the intended project. If you decline, it skips both database changes and function deployment.
 
-The first migration is a schema baseline. If this Supabase database was already changed manually or its migration history is out of sync, stop at the preview and reconcile the migration history before applying it. Do not apply `supabase/schema.sql` and the migrations as separate setup paths.
+The first migration is a schema baseline. If this Supabase database was already changed manually or its migration history is out of sync, stop at the preview and reconcile the migration history before applying it. Do not apply `apps/backend/supabase/schema.sql` and the migrations as separate setup paths.
 
 When confirmed, the script applies pending migrations and deploys `workspace-members`. `APP_BASE_URL` is optional, but recommended for new-user invitation links. Its URL must also be in the Supabase Auth allowed redirect URLs.
 
 You can deploy only the Edge Function after the database has been migrated:
 
 ```powershell
-supabase functions deploy workspace-members --project-ref "suiqchyqbzgtvptdaqkf"
+supabase --workdir apps/backend functions deploy workspace-members --project-ref "suiqchyqbzgtvptdaqkf"
 ```
 
 ## Configure the web app
 
-Copy the URL and publishable key from **Project Settings → API Keys** into the ignored root `.env` file:
+Copy the URL and publishable key from **Project Settings → API Keys** into the ignored `apps/client/.env` file:
 
 ```env
 VITE_DATA_MODE=production
@@ -45,4 +45,4 @@ Restart Vite after editing `.env`. Sign in and open **Team**. The workspace memb
 
 ## Local mock mode
 
-To use the app without a Supabase project, set `VITE_DATA_MODE=mock` in `.env`. Workspace membership actions then use local browser storage; Supabase migrations and functions are not needed.
+To use the app without a Supabase project, set `VITE_DATA_MODE=mock` in `apps/client/.env`. Workspace membership actions then use local browser storage; Supabase migrations and functions are not needed.

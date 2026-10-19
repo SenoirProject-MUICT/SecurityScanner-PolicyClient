@@ -2,7 +2,7 @@
 
 ## Status
 
-Not implemented. The existing [policy schedule](../../src/components/policy-schedule.tsx) displays policy effective date ranges; it is not a merge request review queue or review SLA tracker.
+Not implemented. The existing [policy schedule](../../apps/client/src/components/policy-schedule.tsx) displays policy effective date ranges; it is not a merge request review queue or review SLA tracker.
 
 ## Dependencies
 

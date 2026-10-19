@@ -1,0 +1,9 @@
+{
+  "name": "@policydesk/backend",
+  "private": true,
+  "scripts": {
+    "supabase": "supabase --workdir .",
+    "db:push": "supabase --workdir . db push",
+    "functions:deploy:members": "supabase --workdir . functions deploy workspace-members"
+  }
+}
