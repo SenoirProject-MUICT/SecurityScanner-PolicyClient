@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useRef, useState, type ComponentProps, type MouseEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 
-export interface CopyButtonProps extends ComponentProps<typeof Button> {
+type ButtonProps = ComponentProps<typeof Button>
+
+export interface CopyButtonProps extends Omit<ButtonProps, 'onCopy' | 'onClick'> {
   content: string
   delay?: number
   onCopy?: (content: string) => undefined | boolean
   onCopyError?: (error: unknown) => void
   isCopied?: boolean
   onCopyChange?: (isCopied: boolean) => void
+  onClick?: ButtonProps['onClick']
 }
 
 export function CopyButton({ content, delay = 3000, onClick, onCopy, onCopyError, isCopied, onCopyChange, size = 'icon', ...props }: CopyButtonProps) {
@@ -25,7 +28,7 @@ export function CopyButton({ content, delay = 3000, onClick, onCopy, onCopyError
     onCopyChange?.(next)
   }, [isCopied, onCopyChange])
 
-  async function handleClick(event: MouseEvent<HTMLButtonElement>) {
+  async function handleClick(event: Parameters<NonNullable<ButtonProps['onClick']>>[0]) {
     onClick?.(event)
     if (event.defaultPrevented || copied || !content || onCopy?.(content) === false) return
     try {

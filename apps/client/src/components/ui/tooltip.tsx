@@ -13,9 +13,9 @@ export function TooltipTrigger(props: ComponentProps<typeof TooltipPrimitive.Tri
   return <TooltipPrimitive.Trigger {...props} />
 }
 
-export function TooltipContent({ className = '', sideOffset = 8, ...props }: ComponentProps<typeof TooltipPrimitive.Popup> & { sideOffset?: number }) {
+export function TooltipContent({ className = '', side = 'bottom', align = 'center', sideOffset = 8, ...props }: ComponentProps<typeof TooltipPrimitive.Popup> & { side?: ComponentProps<typeof TooltipPrimitive.Positioner>['side']; align?: ComponentProps<typeof TooltipPrimitive.Positioner>['align']; sideOffset?: number }) {
   return <TooltipPrimitive.Portal>
-    <TooltipPrimitive.Positioner sideOffset={sideOffset}>
+    <TooltipPrimitive.Positioner side={side} align={align} sideOffset={sideOffset}>
       <TooltipPrimitive.Popup className={`ui-tooltip ${className}`} {...props} />
     </TooltipPrimitive.Positioner>
   </TooltipPrimitive.Portal>

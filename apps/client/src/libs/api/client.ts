@@ -7,9 +7,12 @@ export { apiBaseUrl } from './config'
 export { ApiRoute, HttpMethod, HttpStatus } from './routes'
 
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number, options?: ErrorOptions) {
+  readonly status: number
+
+  constructor(message: string, status: number, options?: ErrorOptions) {
     super(message, options)
     this.name = 'ApiError'
+    this.status = status
   }
 }
 
@@ -56,7 +59,7 @@ export async function apiRequest<T>(path: string, config: AxiosRequestConfig = {
       clearApiSession()
     }
 
-    if (axios.isAxiosError(error)) {
+    if (axios.isAxiosError<{ detail?: string; error?: string }>(error)) {
       const data = error.response?.data as { detail?: string; error?: string } | undefined
       throw new ApiError(data?.detail || data?.error || error.message || 'API request failed.', error.response?.status ?? 0, { cause: error })
     }

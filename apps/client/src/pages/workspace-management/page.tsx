@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type MouseEvent } from 'react'
-import { NavLink, useBlocker, useNavigate } from 'react-router'
+import { useBlocker, useNavigate } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, ArrowLeft, Bell, Building2, GitBranch, UsersRound } from 'lucide-react'
@@ -118,7 +118,7 @@ export function WorkspaceManagementPage() {
 
       {activeSection === 'members' && <Card className="workspace-management-card">
         <CardHeader><div className="workspace-management-card-title"><span className="workspace-management-icon"><UsersRound aria-hidden="true" /></span><div><CardTitle>Members</CardTitle><CardDescription>Manage who can access this workspace.</CardDescription></div></div></CardHeader>
-        <CardContent><div className="workspace-management-member-note">Review member access, roles, and invitations from your team page.</div><div className="workspace-management-actions"><Button asChild className="primary-action"><NavLink to={withWorkspaceId('/team', workspace.id)}>Manage members</NavLink></Button></div></CardContent>
+        <CardContent><div className="workspace-management-member-note">Review member access, roles, and invitations from your team page.</div><div className="workspace-management-actions"><Button className="primary-action" onClick={() => navigate(withWorkspaceId('/team', workspace.id))}>Manage members</Button></div></CardContent>
       </Card>}
 
       {(activeSection === 'integrations' || activeSection === 'notifications') && <Card className="workspace-management-card">

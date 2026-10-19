@@ -39,7 +39,10 @@ export function useWorkspaces() {
   const updateMutation = useMutation({ mutationKey: workspaceMutationKeys.update(), mutationFn: ({ workspaceId, name }: { workspaceId: string; name: string }) => updateWorkspace(workspaceId, name), onSuccess: () => queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.list(user?.id ?? '') }) })
   const deleteMutation = useMutation({
     mutationKey: workspaceMutationKeys.delete(),
-    mutationFn: deleteWorkspace,
+    mutationFn: async (workspaceId: string) => {
+      await deleteWorkspace(workspaceId)
+      return workspaceId
+    },
     onSuccess: async (workspaceId) => {
       if (selectedWorkspaceId === workspaceId) {
         leaveWorkspace()
