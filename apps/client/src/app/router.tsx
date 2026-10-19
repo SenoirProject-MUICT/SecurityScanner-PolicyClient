@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
-import { createBrowserRouter, Navigate, Outlet, useLocation, useMatches, useNavigate } from 'react-router'
+import { createBrowserRouter, isRouteErrorResponse, Navigate, Outlet, useLocation, useMatches, useNavigate, useRouteError } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
 import { initializeAuthStore, useAuth } from '@/stores/auth-store'
 import { AppShell } from '@/components/app-shell'
 import { WorkspaceLoading } from '@/components/workspace-loading'
@@ -11,7 +12,7 @@ import { WorkspacesPage } from '@/pages/workspaces/page'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { withWorkspaceId } from '@/libs/workspaces/navigation'
 
-const router = createBrowserRouter([{ element: <AuthRoot />, children: [
+const router = createBrowserRouter([{ element: <AuthRoot />, errorElement: <RouteErrorPage />, children: [
   { path: '/login', lazy: async () => ({ Component: (await import('@/pages/login/page')).LoginPage }) },
   { element: <ProtectedLayout />, children: [
     { index: true, element: null },
@@ -30,6 +31,24 @@ const router = createBrowserRouter([{ element: <AuthRoot />, children: [
 ] }])
 
 export function AppRouter() { return <RouterProvider router={router} /> }
+
+function RouteErrorPage() {
+  const error = useRouteError()
+  const navigate = useNavigate()
+  const status = isRouteErrorResponse(error) ? `ERROR ${error.status}` : 'TEMPORARY ISSUE'
+
+  return <main className="route-error-page">
+    <section className="route-error-content" aria-labelledby="route-error-title">
+      <p className="route-error-eyebrow">ZENTRA <span aria-hidden="true">/</span> {status}</p>
+      <h1 id="route-error-title">This page couldn’t load.</h1>
+      <p className="route-error-description">Something interrupted the page while it was opening. Try again, or return to your workspace and continue from there.</p>
+      <div className="route-error-actions">
+        <Button className="primary-action" onClick={() => window.location.reload()}>Try again</Button>
+        <Button variant="outline" onClick={() => navigate('/')}>Return to workspaces</Button>
+      </div>
+    </section>
+  </main>
+}
 
 function AuthRoot() {
   useEffect(() => { void initializeAuthStore() }, [])

@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           if (previousUser && previousUser.id !== user?.id) queryClient.clear()
           set({ user })
         })
-        try { set({ user: await queryClient.fetchQuery({ queryKey: authQueryKeys.current(), queryFn: () => authService.getCurrentUser(), staleTime: 0 }) }) }
+        try { set({ user: await queryClient.query({ queryKey: authQueryKeys.current(), queryFn: () => authService.getCurrentUser(), staleTime: 0 }) }) }
         catch { set({ user: null }) }
         finally { set({ isLoading: false }) }
       })()

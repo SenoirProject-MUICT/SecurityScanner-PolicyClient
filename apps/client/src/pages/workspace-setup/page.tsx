@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/stores/auth-store'
 import type { useWorkspaces } from '@/libs/workspaces/hooks'
 import { useAuthMutations } from '@/libs/auth/hooks'
+import { BrandLogo } from '@/components/brand-logo'
+import { BRAND } from '@/constants/brand'
 
 type SetupMode = 'create' | 'join'
 
@@ -35,7 +37,7 @@ export function WorkspaceSetupPage({ loadError = '', createWorkspace, joinWorksp
   }
 
   return <main className="workspace-setup-page">
-    <a className="wordmark" href="/">policy<span>desk</span></a>
+    <a className="wordmark" href="/" aria-label={`${BRAND.name} home`}><BrandLogo /></a>
     <section className="workspace-setup-content">
       <span className="workspace-setup-mark"><Building2 aria-hidden="true" /></span>
       <p className="section-eyebrow">YOUR TEAM SPACE</p>
@@ -78,7 +80,7 @@ export function WorkspaceAccessDeniedPage({ onRetry }: { onRetry: WorkspaceSetup
   }
 
   return <main className="workspace-setup-page">
-    <a className="wordmark" href="/">policy<span>desk</span></a>
+    <a className="wordmark" href="/" aria-label={`${BRAND.name} home`}><BrandLogo /></a>
     <section className="workspace-setup-content workspace-access-denied">
       <span className="workspace-setup-mark"><ShieldAlert aria-hidden="true" /></span>
       <p className="section-eyebrow">WORKSPACE ACCESS</p>
