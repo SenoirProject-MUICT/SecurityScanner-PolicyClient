@@ -15,7 +15,7 @@ export function PoliciesPage() {
     try {
       const created = await create(input)
       setEditorOpen(false)
-      toast.success('Policy created', { description: created.name })
+      toast.success(created.status === 'pending' ? 'Policy submitted for approval' : 'Draft saved', { description: created.name })
       navigate(`/policies/${created.id}`)
       return created
     } catch (cause) { toast.error('Could not create policy', { description: getMessage(cause) }); throw cause }

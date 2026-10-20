@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from policydesk_api.api.v1.routes.auth import router as auth_router
 
+from policydesk_api.api.v1.routes.auth import router as auth_router
 from policydesk_api.api.v1.routes.health import router as health_router
 from policydesk_api.api.v1.routes.labels import router as labels_router
 from policydesk_api.api.v1.routes.policies import router as policies_router

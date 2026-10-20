@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useWorkspaceNavigate } from '@/libs/workspaces/navigation'
 import { Area, AreaChart, CartesianGrid, Cell, Line, Pie, PieChart, XAxis, YAxis } from 'recharts'
-import { Activity, ArrowRight, CalendarPlus, FileText, Plus, ShieldCheck, UsersRound } from 'lucide-react'
+import { Activity, ArrowRight, CalendarPlus, ClipboardCheck, FileText, Plus, ShieldCheck, UsersRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
@@ -13,6 +13,7 @@ import { SectionHeading } from '@/components/app-shell'
 import { usePolicies } from '@/libs/policies/hooks'
 import { useAuth } from '@/stores/auth-store'
 import { useLabels } from '@/libs/labels/hooks'
+import { useWorkspaces } from '@/libs/workspaces/hooks'
 import { getPolicyLifecycle, type PolicyActivityType, type PolicyDraftInput } from '@/libs/policies'
 import { toast } from 'sonner'
 import { PolicyLabelBadge } from '@/components/policy-label-badge'
@@ -28,6 +29,8 @@ const activityConfig = {
 const statusConfig = {
   active: { label: 'Active', theme: { light: '#568666', dark: '#91c99d' } },
   scheduled: { label: 'Scheduled', theme: { light: '#7896b6', dark: '#a8c8e8' } },
+  pending: { label: 'Pending approval', theme: { light: '#8a7bb0', dark: '#bfb1e3' } },
+  rejected: { label: 'Rejected', theme: { light: '#bd6c62', dark: '#e69a8e' } },
   inactive: { label: 'Inactive', theme: { light: '#c5cfca', dark: '#84958a' } },
   draft: { label: 'Draft', theme: { light: '#c4a46f', dark: '#e0c17e' } },
 } satisfies ChartConfig
@@ -36,6 +39,8 @@ export function OverviewPage() {
   const { policies, activity, isLoading, error, create } = usePolicies()
   const { user } = useAuth()
   const { labels, isLoading: labelsLoading } = useLabels()
+  const { workspaces, selectedWorkspaceId } = useWorkspaces()
+  const isAdmin = workspaces.find((workspace) => workspace.id === selectedWorkspaceId)?.role === 'admin'
   const navigate = useWorkspaceNavigate()
   const [editorOpen, setEditorOpen] = useState(false)
   const [activityRange, setActivityRange] = useState('7')
@@ -56,15 +61,17 @@ export function OverviewPage() {
   const scheduledCount = policies.filter((policy) => getPolicyLifecycle(policy) === 'scheduled').length
   const inactiveCount = policies.filter((policy) => getPolicyLifecycle(policy) === 'inactive').length
   const draftCount = policies.filter((policy) => getPolicyLifecycle(policy) === 'draft').length
+  const pendingCount = policies.filter((policy) => getPolicyLifecycle(policy) === 'pending').length
+  const rejectedCount = policies.filter((policy) => getPolicyLifecycle(policy) === 'rejected').length
   const trend = useMemo(() => buildActivityTrend(policies, activity, Number(activityRange)), [policies, activity, activityRange])
   const activityTotals = trend.reduce((totals, day) => ({ added: totals.added + day.added, removed: totals.removed + day.removed, draft: totals.draft + day.draft, scheduled: totals.scheduled + day.scheduled }), { added: 0, removed: 0, draft: 0, scheduled: 0 })
-  const statusData = [{ name: 'active', count: activeCount }, { name: 'scheduled', count: scheduledCount }, { name: 'inactive', count: inactiveCount }, { name: 'draft', count: draftCount }]
+  const statusData = [{ name: 'active', count: activeCount }, { name: 'scheduled', count: scheduledCount }, { name: 'pending', count: pendingCount }, { name: 'rejected', count: rejectedCount }, { name: 'inactive', count: inactiveCount }, { name: 'draft', count: draftCount }]
 
   async function save(input: PolicyDraftInput) {
     try {
       const policy = await create(input)
       setEditorOpen(false)
-      toast.success('Policy created', { description: policy.name })
+      toast.success(policy.status === 'pending' ? 'Policy submitted for approval' : 'Draft saved', { description: policy.name })
       navigate(`/policies/${policy.id}`)
       return policy
     } catch (cause) { toast.error('Could not create policy', { description: getMessage(cause) }); throw cause }
@@ -74,6 +81,7 @@ export function OverviewPage() {
   return <>
     <SectionHeading eyebrow="POLICY INTELLIGENCE" title={`Good ${timeOfDay(now)}, ${firstName(user?.name)}.`} description={isLoading ? 'Getting your policy workspace ready.' : `${policies.length} ${policies.length === 1 ? 'policy' : 'policies'} in your library · ${activeCount} currently active.`} action={<Button className="primary-action" onClick={() => setEditorOpen(true)}><Plus data-icon="inline-start" /> Create policy</Button>} />
     {error && <div className="page-alert" role="alert">{error}</div>}
+    {!isLoading && pendingCount > 0 && <div className="approval-banner" role="status"><ClipboardCheck aria-hidden="true" /><span><strong>{pendingCount} {pendingCount === 1 ? 'policy is' : 'policies are'} waiting for approval.</strong> {isAdmin ? 'Review them before they apply to AI checks.' : 'A workspace admin will review them.'}</span><Button variant="outline" size="sm" onClick={() => navigate('/policies?status=pending')}>{isAdmin ? 'Review' : 'View'} <ArrowRight data-icon="inline-end" /></Button></div>}
     <section className="dashboard-stats" aria-label="Policy activity">
       <Metric icon={<FileText />} label="Total policies" value={policies.length} note="Across your library" isLoading={isLoading} />
       <Metric icon={<CalendarPlus />} label="Added today" value={addedToday} note="New policies today" isLoading={isLoading} />
@@ -87,7 +95,7 @@ export function OverviewPage() {
     <PolicySchedule isLoading={isLoading} />
     <section className="dashboard-charts">
       <Card className="dashboard-chart-card trend-card"><CardHeader className="dashboard-card-heading"><div><CardTitle>Policy activity</CardTitle><CardDescription>Changes across your policy library</CardDescription></div><select aria-label="Policy activity date range" className="chart-range-select" value={activityRange} onChange={(event) => setActivityRange(event.target.value)}><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></CardHeader><CardContent><ChartContainer config={activityConfig} className="trend-chart"><AreaChart accessibilityLayer data={trend} margin={{ left: 0, right: 8, top: 10, bottom: 0 }}><CartesianGrid vertical={false} strokeDasharray="3 4" /><XAxis dataKey="day" axisLine={false} tickLine={false} tickMargin={10} minTickGap={24} /><YAxis yAxisId="events" hide allowDecimals={false} /><YAxis yAxisId="total" hide orientation="right" allowDecimals={false} /><ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />{(['added', 'removed', 'draft', 'scheduled'] as const).map((type) => <Area key={type} yAxisId="events" dataKey={type} name={activityConfig[type].label} type="monotone" stackId="activity" stroke={`var(--color-${type})`} fill={`var(--color-${type})`} fillOpacity={0.15} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />)}<Line yAxisId="total" dataKey="total" name="Total policies" type="monotone" stroke="var(--color-total)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} /></AreaChart></ChartContainer><div className="trend-summary activity-summary"><span className="activity-legend">{(['added', 'removed', 'draft', 'scheduled'] as const).map((type) => <span key={type}><i className={`activity-dot activity-dot-${type}`} />{activityConfig[type].label} <strong>{activityTotals[type]}</strong></span>)}<span><i className="activity-dot activity-dot-total" />Total <strong>{policies.length}</strong></span></span><span><Activity /> {activityTotals.added + activityTotals.removed + activityTotals.draft + activityTotals.scheduled} events</span></div></CardContent></Card>
-      <Card className="dashboard-chart-card status-card"><CardHeader className="dashboard-card-heading"><div><CardTitle>Current status</CardTitle><CardDescription>How your library is set up today</CardDescription></div></CardHeader><CardContent><div className="status-chart-wrap"><ChartContainer config={statusConfig} className="status-chart"><PieChart><ChartTooltip content={<ChartTooltipContent hideLabel />} /><Pie data={statusData} dataKey="count" nameKey="name" innerRadius={52} outerRadius={68} startAngle={90} endAngle={-270} strokeWidth={2}>{statusData.map((entry) => <Cell key={entry.name} fill={`var(--color-${entry.name})`} />)}</Pie></PieChart></ChartContainer><div className="status-chart-center"><strong>{isLoading ? '—' : policies.length}</strong><span>policies</span></div></div><div className="status-legend"><StatusLegend label="Active" count={activeCount} color="active" /><StatusLegend label="Scheduled" count={scheduledCount} color="scheduled" /><StatusLegend label="Inactive" count={inactiveCount} color="inactive" /><StatusLegend label="Draft" count={draftCount} color="draft" /></div><div className="status-note"><span>Active policies currently in effect</span><strong>{activeCount} <small>of {policies.length}</small></strong></div></CardContent></Card>
+      <Card className="dashboard-chart-card status-card"><CardHeader className="dashboard-card-heading"><div><CardTitle>Current status</CardTitle><CardDescription>How your library is set up today</CardDescription></div></CardHeader><CardContent><div className="status-chart-wrap"><ChartContainer config={statusConfig} className="status-chart"><PieChart><ChartTooltip content={<ChartTooltipContent hideLabel />} /><Pie data={statusData} dataKey="count" nameKey="name" innerRadius={52} outerRadius={68} startAngle={90} endAngle={-270} strokeWidth={2}>{statusData.map((entry) => <Cell key={entry.name} fill={`var(--color-${entry.name})`} />)}</Pie></PieChart></ChartContainer><div className="status-chart-center"><strong>{isLoading ? '—' : policies.length}</strong><span>policies</span></div></div><div className="status-legend"><StatusLegend label="Active" count={activeCount} color="active" /><StatusLegend label="Scheduled" count={scheduledCount} color="scheduled" /><StatusLegend label="Pending" count={pendingCount} color="pending" /><StatusLegend label="Rejected" count={rejectedCount} color="rejected" /><StatusLegend label="Inactive" count={inactiveCount} color="inactive" /><StatusLegend label="Draft" count={draftCount} color="draft" /></div><div className="status-note"><span>Active policies currently in effect</span><strong>{activeCount} <small>of {policies.length}</small></strong></div></CardContent></Card>
     </section>
     <PolicyEditorDialog open={editorOpen} onOpenChange={setEditorOpen} onSave={save} policy={null} />
   </>

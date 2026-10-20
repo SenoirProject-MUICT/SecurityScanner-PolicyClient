@@ -11,6 +11,10 @@ export const ApiRoute = {
     activity: '/policies/activity',
     item: (id: string) => `/policies/${encodeURIComponent(id)}`,
     status: (id: string) => `/policies/${encodeURIComponent(id)}/status`,
+    submit: (id: string) => `/policies/${encodeURIComponent(id)}/submit`,
+    approve: (id: string) => `/policies/${encodeURIComponent(id)}/approve`,
+    reject: (id: string) => `/policies/${encodeURIComponent(id)}/reject`,
+    history: (id: string) => `/policies/${encodeURIComponent(id)}/history`,
   },
   labels: {
     collection: '/labels',

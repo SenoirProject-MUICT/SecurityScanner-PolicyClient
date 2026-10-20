@@ -2,7 +2,14 @@
 
 ## Status
 
-Not implemented. Current policy statuses are `draft`, `active`, and `inactive`; there is no pending approval status, approver identity, approval history, or enforcement that only an admin can activate a submitted policy.
+**DONE in application code and mock mode; production migration pending.** Policies move `draft → pending → active` or `rejected`. Admins approve, reject (with a required reason), and turn approved policies on or off. The FastAPI policy service enforces the workflow, and every decision is stored in `policy_approval_events` with the policy version, actor, note, and time. Apply [`20261021000000_policy_approval.sql`](../../apps/backend/supabase/migrations/20261021000000_policy_approval.sql) manually before using the feature against Supabase. Existing `active` and `inactive` policies are treated as approved.
+
+Resolved decisions:
+
+- **Self-approval:** another admin must approve a policy you submitted. If you are the only active admin, you can approve it yourself, and the history marks it as self-approved.
+- **Material fields:** name, description, labels, and effective dates. Editing any of them increases the policy version, sends an approved policy back for review, and records a `reopened` event. Renaming or deleting a label in the label library does not reopen approval.
+- **Rejection:** policies stay `rejected` with the reviewer's reason visible until the author edits or resubmits them.
+- **Enforcement:** the approval workflow is enforced in the API. Approval events can only be written with the service role. Policy rows still use workspace-member RLS, so a client holding the Supabase anon key and a user JWT could bypass the API. The client never receives that key.
 
 References: [policy lifecycle helpers](../../apps/client/src/libs/policies/status.ts), [policy repository types](../../apps/client/src/libs/policies/types.ts), [policy detail UI](../../apps/client/src/components/policy-detail.tsx), [Supabase schema](../../apps/backend/supabase/schema.sql).
 

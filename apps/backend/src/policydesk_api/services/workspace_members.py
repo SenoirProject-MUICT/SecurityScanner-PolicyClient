@@ -6,9 +6,9 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException
-import httpx
 
 from policydesk_api.api.dependencies import AuthenticatedUser
 from policydesk_api.core.config import get_settings
@@ -28,7 +28,7 @@ def execute_workspace_member_action(payload: WorkspaceAction, user: Authenticate
         return _join_workspace(admin, user, payload.code)
 
     workspace_id = _uuid(payload.workspace_id, "Choose a valid workspace.")
-    memberships = admin.table("workspace_memberships").select("id,role,status").eq("workspace_id", workspace_id).eq("user_id", user.id).maybe_single().execute().data
+    memberships = _maybe_data(admin.table("workspace_memberships").select("id,role,status").eq("workspace_id", workspace_id).eq("user_id", user.id).maybe_single().execute())
     if not memberships or memberships["status"] != "active":
         raise HTTPException(status_code=403, detail="You are not an active member of this workspace.")
     is_admin = memberships["role"] == "admin"
@@ -43,13 +43,13 @@ def execute_workspace_member_action(payload: WorkspaceAction, user: Authenticate
         name = (payload.name or "").strip()
         if not name or len(name) > 100:
             raise HTTPException(status_code=422, detail="Enter a workspace name up to 100 characters.")
-        result = admin.table("workspaces").update({"name": name, "updated_at": datetime.now(UTC).isoformat()}).eq("id", workspace_id).select("id,name").maybe_single().execute().data
+        result = _maybe_data(admin.table("workspaces").update({"name": name, "updated_at": datetime.now(UTC).isoformat()}).eq("id", workspace_id).select("id,name").maybe_single().execute())
         if not result:
             raise HTTPException(status_code=404, detail="This workspace could not be found.")
         return {"workspace": {"workspaceId": result["id"], "name": result["name"]}}
 
     if payload.action == "delete-workspace":
-        result = admin.table("workspaces").delete().eq("id", workspace_id).select("id").maybe_single().execute().data
+        result = _maybe_data(admin.table("workspaces").delete().eq("id", workspace_id).select("id").maybe_single().execute())
         if not result:
             raise HTTPException(status_code=404, detail="This workspace could not be found.")
         logger.info("Workspace deleted workspace_id=%s actor_id=%s", workspace_id, user.id)
@@ -60,7 +60,7 @@ def execute_workspace_member_action(payload: WorkspaceAction, user: Authenticate
         return {"joinCodes": [{key: row[key] for key in ("id", "workspace_id", "expires_at", "created_at", "revoked_at")} | {"code_available": bool(row.get("code_ciphertext"))} for row in rows]}
     if payload.action == "reveal-join-code":
         code_id = _uuid(payload.code_id, "Choose a valid join code.")
-        row = admin.table("workspace_join_codes").select("code_ciphertext").eq("id", code_id).eq("workspace_id", workspace_id).maybe_single().execute().data
+        row = _maybe_data(admin.table("workspace_join_codes").select("code_ciphertext").eq("id", code_id).eq("workspace_id", workspace_id).maybe_single().execute())
         if not row or not row.get("code_ciphertext"):
             raise HTTPException(status_code=404, detail="This code cannot be revealed. Codes created before code recovery was enabled are not recoverable.")
         try:
@@ -78,7 +78,7 @@ def execute_workspace_member_action(payload: WorkspaceAction, user: Authenticate
         return {"joinCode": {**row, "code": code}}
     if payload.action == "revoke-join-code":
         code_id = _uuid(payload.code_id, "Choose a valid join code.")
-        result = admin.table("workspace_join_codes").update({"revoked_at": datetime.now(UTC).isoformat()}).eq("id", code_id).eq("workspace_id", workspace_id).is_("revoked_at", "null").select("id").maybe_single().execute().data
+        result = _maybe_data(admin.table("workspace_join_codes").update({"revoked_at": datetime.now(UTC).isoformat()}).eq("id", code_id).eq("workspace_id", workspace_id).is_("revoked_at", "null").select("id").maybe_single().execute())
         if not result:
             raise HTTPException(status_code=404, detail="This join code is no longer active.")
         return {"success": True}
@@ -86,7 +86,7 @@ def execute_workspace_member_action(payload: WorkspaceAction, user: Authenticate
         return {"member": _invite(admin, workspace_id, user, payload.email, payload.role)}
 
     member_id = _uuid(payload.member_id, "Choose a valid workspace member.")
-    target = admin.table("workspace_memberships").select("id,role,status,user_id,email").eq("id", member_id).eq("workspace_id", workspace_id).maybe_single().execute().data
+    target = _maybe_data(admin.table("workspace_memberships").select("id,role,status,user_id,email").eq("id", member_id).eq("workspace_id", workspace_id).maybe_single().execute())
     if not target:
         raise HTTPException(status_code=404, detail="That member is no longer in this workspace.")
     if payload.action == "set-role":
@@ -108,7 +108,7 @@ def execute_workspace_member_action(payload: WorkspaceAction, user: Authenticate
                 updates["user_id"] = auth_user["id"]
                 updates["email"] = auth_user.get("email", target["email"]).strip().lower()
                 updates["display_name"] = _display_name(auth_user)
-        result = admin.table("workspace_memberships").update(updates).eq("id", member_id).eq("workspace_id", workspace_id).select("id,status,user_id").maybe_single().execute().data
+        result = _maybe_data(admin.table("workspace_memberships").update(updates).eq("id", member_id).eq("workspace_id", workspace_id).select("id,status,user_id").maybe_single().execute())
         if not result:
             raise HTTPException(status_code=404, detail="That member is no longer in this workspace.")
         if result["status"] != payload.status:
@@ -129,7 +129,7 @@ def execute_workspace_member_action(payload: WorkspaceAction, user: Authenticate
     raise HTTPException(status_code=400, detail="Unknown workspace member action.")
 
 
-def _create_workspace(admin: Any, user: CurrentUser, name: str | None) -> dict:
+def _create_workspace(admin: Any, user: AuthenticatedUser, name: str | None) -> dict:
     cleaned = (name or "").strip()
     if not cleaned or len(cleaned) > 100:
         raise HTTPException(status_code=422, detail="Enter a workspace name up to 100 characters.")
@@ -144,21 +144,21 @@ def _create_workspace(admin: Any, user: CurrentUser, name: str | None) -> dict:
     return {"workspace": {"workspaceId": workspace["id"], "name": workspace["name"], "role": "admin", "isDefault": is_default}}
 
 
-def _join_workspace(admin: Any, user: CurrentUser, code: str | None) -> dict:
+def _join_workspace(admin: Any, user: AuthenticatedUser, code: str | None) -> dict:
     code_hash = _hash_code(code or "")
     if not code_hash:
         raise HTTPException(status_code=422, detail="Enter a valid workspace join code.")
-    join_code = admin.table("workspace_join_codes").select("id,workspace_id,expires_at,revoked_at").eq("code_hash", code_hash).maybe_single().execute().data
+    join_code = _maybe_data(admin.table("workspace_join_codes").select("id,workspace_id,expires_at,revoked_at").eq("code_hash", code_hash).maybe_single().execute())
     if not join_code or join_code["revoked_at"] or datetime.fromisoformat(join_code["expires_at"].replace("Z", "+00:00")) <= datetime.now(UTC):
         raise HTTPException(status_code=404, detail="This join code is invalid or has expired.")
-    existing = admin.table("workspace_memberships").select("id,status").eq("workspace_id", join_code["workspace_id"]).eq("user_id", user.id).maybe_single().execute().data
+    existing = _maybe_data(admin.table("workspace_memberships").select("id,status").eq("workspace_id", join_code["workspace_id"]).eq("user_id", user.id).maybe_single().execute())
     if existing and existing["status"] == "active":
         raise HTTPException(status_code=409, detail="You already belong to this workspace.")
     if existing and existing["status"] == "disabled":
         raise HTTPException(status_code=403, detail="Your access to this workspace is disabled. Contact an admin.")
     active = admin.table("workspace_memberships").select("id,is_default").eq("user_id", user.id).eq("status", "active").execute().data or []
     is_default = not any(row["is_default"] for row in active)
-    invited = admin.table("workspace_memberships").select("id").eq("workspace_id", join_code["workspace_id"]).eq("email", user.email.lower()).eq("status", "invited").maybe_single().execute().data if user.email else None
+    invited = _maybe_data(admin.table("workspace_memberships").select("id").eq("workspace_id", join_code["workspace_id"]).eq("email", user.email.lower()).eq("status", "invited").maybe_single().execute()) if user.email else None
     values = {"user_id": user.id, "email": user.email.lower(), "display_name": user.name, "status": "active", "is_default": is_default, "updated_at": datetime.now(UTC).isoformat()}
     if invited:
         admin.table("workspace_memberships").update(values).eq("id", invited["id"]).execute()
@@ -167,7 +167,7 @@ def _join_workspace(admin: Any, user: CurrentUser, code: str | None) -> dict:
     return {"success": True}
 
 
-def _resolve_user_workspaces(admin: Any, user: CurrentUser) -> list[dict]:
+def _resolve_user_workspaces(admin: Any, user: AuthenticatedUser) -> list[dict]:
     email = user.email.strip().lower()
     # Membership emails can predate normalization. Match case-insensitively so
     # an active row can be reattached after a user's Auth account is recreated.
@@ -187,7 +187,7 @@ def _resolve_user_workspaces(admin: Any, user: CurrentUser) -> list[dict]:
         logger.info("Workspace active email matches user_id=%s count=%s", user.id, len(email_active))
         default_exists = bool(admin.table("workspace_memberships").select("id").eq("user_id", user.id).eq("status", "active").eq("is_default", True).limit(1).execute().data)
         for membership in email_active:
-            conflicting = admin.table("workspace_memberships").select("id").eq("workspace_id", membership["workspace_id"]).eq("user_id", user.id).maybe_single().execute().data
+            conflicting = _maybe_data(admin.table("workspace_memberships").select("id").eq("workspace_id", membership["workspace_id"]).eq("user_id", user.id).maybe_single().execute())
             if conflicting and conflicting["id"] != membership["id"]:
                 logger.warning(
                     "Could not reattach active workspace membership because another membership uses this user id user_id=%s workspace_id=%s",
@@ -228,7 +228,7 @@ def _resolve_user_workspaces(admin: Any, user: CurrentUser) -> list[dict]:
     return [{"workspaceId": row["workspace_id"], "name": by_id.get(row["workspace_id"], "Workspace"), "role": row["role"], "isDefault": row["is_default"]} for row in rows]
 
 
-def _invite(admin: Any, workspace_id: str, user: CurrentUser, email_value: str | None, role: str | None) -> dict:
+def _invite(admin: Any, workspace_id: str, user: AuthenticatedUser, email_value: str | None, role: str | None) -> dict:
     email = (email_value or "").strip().lower()
     if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
         raise HTTPException(status_code=422, detail="Enter a valid email address.")
@@ -298,3 +298,8 @@ def _join_code_cipher() -> Fernet:
         raise HTTPException(status_code=503, detail="Join code recovery is not configured.")
     key = base64.urlsafe_b64encode(hashlib.sha256(b"policydesk-join-code-v1:" + secret.encode()).digest())
     return Fernet(key)
+
+
+def _maybe_data(response: Any) -> Any:
+    # maybe_single() returns no response object at all when nothing matches.
+    return response.data if response is not None else None

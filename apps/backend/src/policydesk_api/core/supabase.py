@@ -1,8 +1,7 @@
 from functools import lru_cache
 
-from supabase import Client, ClientOptions, create_client
-
 from policydesk_api.core.config import get_settings
+from supabase import Client, ClientOptions, create_client
 
 
 def create_user_client(access_token: str) -> Client:

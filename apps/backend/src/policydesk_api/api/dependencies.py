@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, Request
-from supabase import Client
 
 from policydesk_api.core.supabase import create_user_client
+from supabase import Client
 
 logger = logging.getLogger("policydesk.api.auth")
 

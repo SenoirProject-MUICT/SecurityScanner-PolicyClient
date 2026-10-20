@@ -18,6 +18,8 @@ const PAGE_SIZE = 8
 const statusOptions = [
   { value: 'active', label: 'Active' },
   { value: 'scheduled', label: 'Scheduled' },
+  { value: 'pending', label: 'Pending approval' },
+  { value: 'rejected', label: 'Rejected' },
   { value: 'inactive', label: 'Inactive' },
   { value: 'draft', label: 'Draft' },
 ] as const
