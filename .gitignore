@@ -18,8 +18,6 @@ dist-ssr
 # Supabase CLI local state (project link and local service versions)
 apps/backend/supabase/.temp/
 apps/backend/supabase/.branches/
-supabase/.temp/
-supabase/.branches/
 
 # Python / uv
 .venv/
