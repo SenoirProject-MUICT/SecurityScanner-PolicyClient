@@ -25,10 +25,10 @@ def update_label(user: AuthenticatedUser, workspace_id: str, label_id: str, raw_
 
 def delete_label(user: AuthenticatedUser, workspace_id: str, label_id: str) -> None:
     existing = repository.get_label_row(user.supabase, label_id, workspace_id)
-    for policy in repository.list_policy_label_rows(user.supabase, workspace_id):
-        labels = policy.get("labels") or []
-        if existing["name"] in labels:
-            repository.replace_policy_label(user.supabase, policy["id"], workspace_id, [label for label in labels if label != existing["name"]])
+    # Labels still assigned to policies can't be deleted; remove them from those policies first.
+    in_use = sum(1 for policy in repository.list_policy_label_rows(user.supabase, workspace_id) if existing["name"] in (policy.get("labels") or []))
+    if in_use:
+        raise HTTPException(status_code=409, detail=f"This label is used by {in_use} {'policy' if in_use == 1 else 'policies'}. Remove it from {'that policy' if in_use == 1 else 'those policies'} first.")
     repository.delete_label_row(user.supabase, label_id, workspace_id)
 
 
