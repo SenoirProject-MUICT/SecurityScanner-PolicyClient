@@ -41,12 +41,25 @@ export const mockLabelRepository: LabelRepository = {
     const current = readLabels()
     const existing = current.find((label) => label.id === id && label.workspaceId === workspaceId)
     if (!existing) return
-    updateStoredPolicies(existing.name, undefined, workspaceId)
+    // Labels still assigned to policies can't be deleted; remove them from those policies first.
+    const inUse = countPoliciesUsing(existing.name, workspaceId)
+    if (inUse) throw new Error(`This label is used by ${inUse} ${inUse === 1 ? 'policy' : 'policies'}. Remove it from ${inUse === 1 ? 'that policy' : 'those policies'} first.`)
     saveLabels(current.filter((label) => label.id !== id))
   },
 }
 
-function updateStoredPolicies(oldName: string, newName: string | undefined, workspaceId: string) {
+function countPoliciesUsing(name: string, workspaceId: string) {
+  try {
+    const policies: unknown = JSON.parse(window.localStorage.getItem('policy-desk.policies.v2') ?? window.localStorage.getItem('policy-desk.policies.v1') ?? '[]')
+    if (!Array.isArray(policies)) return 0
+    return policies.filter((policy) => {
+      const row = policy as { labels?: unknown; workspaceId?: string; ownerId?: string }
+      return (row.workspaceId ?? getMockWorkspaceId(row.ownerId ?? 'mock-demo-user')) === workspaceId && Array.isArray(row.labels) && row.labels.includes(name)
+    }).length
+  } catch { return 0 }
+}
+
+function updateStoredPolicies(oldName: string, newName: string, workspaceId: string) {
   for (const key of ['policy-desk.policies.v2', 'policy-desk.policies.v1']) {
     try {
       const stored = window.localStorage.getItem(key)
@@ -58,7 +71,7 @@ function updateStoredPolicies(oldName: string, newName: string | undefined, work
         const row = policy as { labels?: unknown; workspaceId?: string; ownerId?: string }
         const policyWorkspaceId = row.workspaceId ?? getMockWorkspaceId(row.ownerId ?? 'mock-demo-user')
         if (policyWorkspaceId !== workspaceId || !Array.isArray(row.labels) || !row.labels.includes(oldName)) return policy
-        return { ...row, labels: newName ? row.labels.map((label) => label === oldName ? newName : label) : row.labels.filter((label) => label !== oldName) }
+        return { ...row, labels: row.labels.map((label) => label === oldName ? newName : label) }
       })
       window.localStorage.setItem(key, JSON.stringify(updated))
     } catch { throw new Error('Could not update policies that use this label. Try again.') }

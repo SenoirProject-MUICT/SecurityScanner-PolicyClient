@@ -682,7 +682,8 @@ body:has(.login-page) { display: grid; height: 100svh; min-height: 0; overflow: 
 .labels-list-card > [data-slot="card-content"] { padding: 0; }
 .managed-label-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 14px; }
 .managed-label-card { min-width: 0; cursor: pointer; background: var(--surface-panel); border: 1px solid var(--border-default); border-radius: 10px; box-shadow: 0 1px 3px rgb(29 52 35 / 2%); transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
-.managed-label-card > [data-slot="card-content"] { display: flex; min-height: 112px; flex-direction: column; align-items: flex-start; gap: 8px; padding: 13px; }
+.managed-label-grid .managed-label-card { padding-block: 0; }
+.managed-label-card > [data-slot="card-content"] { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 11px 12px; }
 .managed-label-card .managed-label-name { max-width: 100%; min-height: 28px; overflow-wrap: anywhere; padding: 5px 10px; font-size: 13px; text-overflow: ellipsis; }
 .managed-label-card small { max-width: 100%; color: #68776d; font-size: 12px; overflow-wrap: anywhere; }
 .managed-label-card button { width: auto; height: 32px; margin-top: auto; align-self: flex-end; justify-content: space-between; gap: 6px; padding-inline: 9px; color: #596c5e; font-size: 12px; }
@@ -693,6 +694,15 @@ body:has(.login-page) { display: grid; height: 100svh; min-height: 0; overflow: 
 .managed-label-context-trigger:focus-visible .managed-label-card { outline: 2px solid var(--action-focus-border); outline-offset: 2px; }
 .managed-label-card .managed-label-edit { display: block; width: fit-content; height: auto; min-width: 0; margin: 0; padding: 0; align-self: flex-start; border: 0; background: transparent; }
 .managed-label-card .managed-label-edit:disabled { cursor: default; opacity: 1; }
+.managed-label-header { display: flex; width: 100%; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.managed-label-remove-wrap { display: inline-flex; flex: 0 0 auto; border-radius: 8px; }
+.managed-label-remove-wrap:has(:disabled) { cursor: not-allowed; }
+.managed-label-card .managed-label-remove:disabled, .dark .managed-label-card .managed-label-remove:disabled { color: var(--text-muted); background: transparent; border-color: transparent; opacity: .4; }
+.label-context-item[data-disabled] { cursor: not-allowed; opacity: .5; }
+.managed-label-card .managed-label-remove { width: 28px; height: 28px; flex: 0 0 auto; margin: 0; padding: 0; align-self: flex-start; justify-content: center; color: var(--text-muted); }
+.managed-label-card .managed-label-remove:hover:not(:disabled), .managed-label-card .managed-label-remove:focus-visible { color: var(--danger-hover-text); background: var(--danger-hover-surface); }
+.dark .managed-label-card .managed-label-remove { color: var(--text-muted); background: transparent; border-color: transparent; }
+.dark .managed-label-card .managed-label-remove:hover:not(:disabled), .dark .managed-label-card .managed-label-remove:focus-visible { color: var(--danger-hover-text); background: var(--danger-hover-surface); border-color: transparent; }
 .label-context-positioner { z-index: 80; outline: none; }
 .label-context-popup { min-width: 160px; padding: 4px; border: 1px solid #e4e9e2; border-radius: 9px; background: var(--surface-panel); box-shadow: 0 8px 24px rgb(22 38 25 / 12%); color: #26352a; }
 .label-context-item { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 9px; border-radius: 6px; outline: none; font-size: 13px; cursor: pointer; }
