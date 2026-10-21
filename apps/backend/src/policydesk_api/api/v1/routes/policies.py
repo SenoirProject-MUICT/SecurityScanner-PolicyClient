@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Query
 
 from policydesk_api.api.dependencies import CurrentUser
-from policydesk_api.schemas.policy import ActivityInput, PolicyInput, PolicyStatusInput
+from policydesk_api.schemas.policy import (
+    ActivityInput,
+    ApprovalDecisionInput,
+    PolicyInput,
+    PolicyStatusInput,
+)
 from policydesk_api.services import policies as service
 
 router = APIRouter(prefix="/policies", tags=["policies"])
@@ -25,6 +30,26 @@ def update_policy(policy_id: str, payload: PolicyInput, user: CurrentUser, works
 @router.patch("/{policy_id}/status")
 def set_policy_status(policy_id: str, payload: PolicyStatusInput, user: CurrentUser, workspace_id: str = Query(min_length=1)) -> dict:
     return service.set_policy_status(user, workspace_id, policy_id, payload.status)
+
+
+@router.post("/{policy_id}/submit")
+def submit_policy(policy_id: str, payload: ApprovalDecisionInput, user: CurrentUser, workspace_id: str = Query(min_length=1)) -> dict:
+    return service.submit_policy(user, workspace_id, policy_id, payload.note)
+
+
+@router.post("/{policy_id}/approve")
+def approve_policy(policy_id: str, payload: ApprovalDecisionInput, user: CurrentUser, workspace_id: str = Query(min_length=1)) -> dict:
+    return service.approve_policy(user, workspace_id, policy_id, payload.note)
+
+
+@router.post("/{policy_id}/reject")
+def reject_policy(policy_id: str, payload: ApprovalDecisionInput, user: CurrentUser, workspace_id: str = Query(min_length=1)) -> dict:
+    return service.reject_policy(user, workspace_id, policy_id, payload.note)
+
+
+@router.get("/{policy_id}/history")
+def list_policy_history(policy_id: str, user: CurrentUser, workspace_id: str = Query(min_length=1)) -> list[dict]:
+    return service.list_policy_history(user, workspace_id, policy_id)
 
 
 @router.delete("/{policy_id}", status_code=204)

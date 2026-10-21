@@ -41,6 +41,7 @@ Workspace join codes are hashed for validation and encrypted for workspace-admin
 
 - `/api/v1/auth/*` — proxies sign-in, sign-up, refresh, sign-out, current user, and profile updates to Supabase Auth.
 - `/api/v1/policies` and `/api/v1/policies/activity` — policy records and activity history.
+- `/api/v1/policies/{id}/submit`, `/approve`, `/reject`, and `/history` — the admin approval workflow and its per-policy history. `PATCH /api/v1/policies/{id}/status` turns approved policies on or off and is limited to admins. Apply `20261021000000_policy_approval.sql` before using these routes.
 - `/api/v1/labels` — workspace label CRUD and policy label propagation.
 - `/api/v1/workspace-members` — membership, invitations, and expiring join-code actions.
 

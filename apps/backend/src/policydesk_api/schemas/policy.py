@@ -14,13 +14,18 @@ class PolicyInput(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     description: str = Field(default="", max_length=10000)
     labels: list[str] = Field(default_factory=list)
-    status: Literal["draft", "active", "inactive"] = "draft"
+    # Authors choose to keep a draft or submit it; only admins can activate a policy.
+    status: Literal["draft", "pending"] = "draft"
     effective_from: str | None = None
     effective_until: str | None = None
 
 
 class PolicyStatusInput(BaseModel):
-    status: Literal["draft", "active", "inactive"]
+    status: Literal["active", "inactive"]
+
+
+class ApprovalDecisionInput(BaseModel):
+    note: str = Field(default="", max_length=1000)
 
 
 class ActivityInput(BaseModel):

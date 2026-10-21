@@ -4,7 +4,7 @@ import { apiBaseUrl } from './config'
 import { clearApiSession, readApiSession, saveApiSession, type ApiSession } from '@/libs/auth/session'
 
 export { apiBaseUrl } from './config'
-export { ApiRoute, HttpMethod, HttpStatus } from './routes'
+export { ApiRoute, HttpMethod } from './routes'
 
 export class ApiError extends Error {
   readonly status: number

@@ -8,7 +8,7 @@ import { PolicyLabelBadge } from '@/components/policy-label-badge'
 import { PolicyStatusBadge } from '@/components/policy-status-badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getPolicyLifecycle, toDateKey, type Policy } from '@/libs/policies'
+import { getPolicyLifecycle, policyLifecycleLabels, toDateKey, type Policy } from '@/libs/policies'
 import { Select } from '@base-ui/react/select'
 
 const WEEKDAYS = Array.from({ length: 7 }, (_, index) => new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(new Date(2024, 0, index + 7)))
@@ -61,7 +61,7 @@ export function PolicySchedule({ isLoading = false }: { isLoading?: boolean }) {
               {week.map((day, index) => <div className={`calendar-day ${index === 6 ? 'is-last-day' : ''} ${day.getMonth() === monthStart.getMonth() ? '' : 'is-outside'} ${toDateKey(day) === todayKey ? 'is-today' : ''}`} key={toDateKey(day)} style={{ gridColumn: index + 1, gridRow: `1 / ${trackCount + 2}` }}><span>{day.getDate()}</span></div>)}
               {segments.map(({ policy, start, end, track }) => <Tooltip key={`${policy.id}-${toDateKey(week[0])}`}>
                 <TooltipTrigger render={<button type="button" className={`schedule-bar is-${getPolicyLifecycle(policy)} ${selectedPolicyId === policy.id ? 'is-selected' : ''}`} style={{ gridColumn: `${start + 1} / ${end + 1}`, gridRow: track + 2 }} aria-label={`${policy.name}, ${getPolicyLifecycle(policy)}, ${formatDateRange(policy.effectiveFrom, policy.effectiveUntil)}. Show schedule details`} onClick={() => setSelectedPolicyId(policy.id)} />}><span>{policy.name}</span></TooltipTrigger>
-                <TooltipContent className="schedule-tooltip"><strong>{policy.name}</strong><span>{formatDateRange(policy.effectiveFrom, policy.effectiveUntil)}</span><span className="schedule-tooltip-status">{getPolicyLifecycle(policy)}</span></TooltipContent>
+                <TooltipContent className="schedule-tooltip"><strong>{policy.name}</strong><span>{formatDateRange(policy.effectiveFrom, policy.effectiveUntil)}</span><span className="schedule-tooltip-status">{policyLifecycleLabels[getPolicyLifecycle(policy)]}</span></TooltipContent>
               </Tooltip>)}
             </div>
           })}</div>
@@ -82,7 +82,7 @@ export function PolicySchedule({ isLoading = false }: { isLoading?: boolean }) {
         </> : <div className="schedule-detail-empty"><span>POLICY DETAILS</span><p>Select a policy on the calendar to see its dates, status, and labels.</p></div>}
       </aside>
       </div>
-      <div className="schedule-footer"><span><i className="schedule-dot is-active" />Active</span><span><i className="schedule-dot is-scheduled" />Scheduled</span><span><i className="schedule-dot is-draft" />Draft</span><span><i className="schedule-dot is-inactive" />Off</span><Button variant="ghost" size="sm" onClick={() => navigate('/policies')}>View policies</Button></div>
+      <div className="schedule-footer"><span><i className="schedule-dot is-active" />Active</span><span><i className="schedule-dot is-scheduled" />Scheduled</span><span><i className="schedule-dot is-pending" />Pending</span><span><i className="schedule-dot is-draft" />Draft</span><span><i className="schedule-dot is-inactive" />Off</span><Button variant="ghost" size="sm" onClick={() => navigate('/policies')}>View policies</Button></div>
     </CardContent>
   </Card>
 }

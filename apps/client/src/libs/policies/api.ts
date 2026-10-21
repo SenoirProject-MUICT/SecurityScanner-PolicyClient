@@ -1,5 +1,5 @@
 import { apiRequest, ApiRoute, HttpMethod, queryString } from '@/libs/api/client'
-import type { Policy, PolicyActivity, PolicyActivityType, PolicyInput, PolicyRepository, PolicyStatus } from './types'
+import type { Policy, PolicyActivity, PolicyActivityType, PolicyApprovalEvent, PolicyInput, PolicyRepository, PolicyToggleStatus } from './types'
 
 export const apiPolicyRepository: PolicyRepository = {
   list(workspaceId) {
@@ -14,8 +14,20 @@ export const apiPolicyRepository: PolicyRepository = {
   async delete(id, workspaceId) {
     await apiRequest<void>(`${ApiRoute.policies.item(id)}?${queryString({ workspace_id: workspaceId })}`, { method: HttpMethod.Delete })
   },
-  setStatus(id, status: PolicyStatus, workspaceId) {
+  setStatus(id, status: PolicyToggleStatus, workspaceId) {
     return apiRequest<Policy>(`${ApiRoute.policies.status(id)}?${queryString({ workspace_id: workspaceId })}`, { method: HttpMethod.Patch, data: { status } })
+  },
+  submit(id, workspaceId, note) {
+    return apiRequest<Policy>(`${ApiRoute.policies.submit(id)}?${queryString({ workspace_id: workspaceId })}`, { method: HttpMethod.Post, data: { note } })
+  },
+  approve(id, workspaceId, note) {
+    return apiRequest<Policy>(`${ApiRoute.policies.approve(id)}?${queryString({ workspace_id: workspaceId })}`, { method: HttpMethod.Post, data: { note } })
+  },
+  reject(id, workspaceId, note) {
+    return apiRequest<Policy>(`${ApiRoute.policies.reject(id)}?${queryString({ workspace_id: workspaceId })}`, { method: HttpMethod.Post, data: { note } })
+  },
+  listHistory(id, workspaceId) {
+    return apiRequest<PolicyApprovalEvent[]>(`${ApiRoute.policies.history(id)}?${queryString({ workspace_id: workspaceId })}`)
   },
   listActivity(workspaceId) {
     return apiRequest<PolicyActivity[]>(`${ApiRoute.policies.activity}?${queryString({ workspace_id: workspaceId })}`)

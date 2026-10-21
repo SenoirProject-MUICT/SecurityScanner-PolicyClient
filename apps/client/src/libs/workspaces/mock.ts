@@ -27,6 +27,8 @@ export const mockWorkspaceMemberService: WorkspaceMemberService = {
       }
     }
     if (!active.length && data.members.some((member) => member.userId === user.id)) throw new WorkspaceAccessDeniedError()
+    // A new user has no workspace yet; return none so the app shows workspace setup.
+    if (!active.length) return []
     if (!active.some((member) => member.isDefault)) {
       active[0].isDefault = true
       writeData(data)
@@ -88,6 +90,7 @@ export const mockWorkspaceMemberService: WorkspaceMemberService = {
     removeWorkspaceRows('policy-desk.policies.v1', workspaceId)
     removeWorkspaceRows('policy-desk.activity.v1', workspaceId)
     removeWorkspaceRows('policy-desk.labels.v1', workspaceId)
+    removeWorkspaceRows('policy-desk.approval-history.v1', workspaceId)
   },
   async listMembers(workspaceId) {
     await simulateMockLoading()
@@ -209,6 +212,14 @@ function removeWorkspaceRows(key: string, workspaceId: string) {
 function hash(value: string) { let result = 2166136261; for (const character of value) result = Math.imul(result ^ character.charCodeAt(0), 16777619); return (result >>> 0).toString(36) }
 
 export function getMockWorkspaceId(userId: string) { return `mock-workspace-${hash(userId)}` }
+
+/** The signed-in mock user's role in a workspace, for mirroring API permission checks. */
+export function getMockWorkspaceAccess(workspaceId: string) {
+  const members = readData().members.filter((member) => member.workspaceId === workspaceId)
+  const user = readCurrentUser()
+  const caller = members.find((member) => member.userId === user?.id && member.status === 'active')
+  return { user, role: caller?.role ?? null, activeAdminCount: members.filter((member) => member.role === 'admin' && member.status === 'active').length }
+}
 function createCode() {
   const bytes = crypto.getRandomValues(new Uint8Array(12))
   const value = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
