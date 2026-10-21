@@ -20,6 +20,18 @@ export const ApiRoute = {
     collection: '/labels',
     item: (id: string) => `/labels/${encodeURIComponent(id)}`,
   },
+  integrations: {
+    githubInstallUrl: '/integrations/github/install-url',
+  },
+  repositoryConnections: {
+    collection: '/repository-connections',
+    item: (id: string) => `/repository-connections/${encodeURIComponent(id)}`,
+    sync: (id: string) => `/repository-connections/${encodeURIComponent(id)}/sync`,
+  },
+  reviewRequests: {
+    collection: '/review-requests',
+    item: (id: string) => `/review-requests/${encodeURIComponent(id)}`,
+  },
   workspaceMembers: '/workspace-members',
 } as const
 

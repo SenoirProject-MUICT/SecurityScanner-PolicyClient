@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from policydesk_api.api.dependencies import AuthenticatedUser
 from policydesk_api.core.supabase import get_admin_client
 from policydesk_api.repositories import policies as repository
+from policydesk_api.services.workspace_access import require_admin
 
 # Changing any of these after review invalidates the approval decision.
 MATERIAL_FIELDS = ("name", "description", "labels", "effective_from", "effective_until")
@@ -140,11 +141,7 @@ def _transition(user: AuthenticatedUser, existing: dict, from_statuses: list[str
 
 
 def _require_admin(user: AuthenticatedUser, workspace_id: str) -> None:
-    membership = repository.get_membership_row(user.supabase, workspace_id, user.id)
-    if not membership or membership["status"] != "active":
-        raise HTTPException(status_code=403, detail="You are not an active member of this workspace.")
-    if membership["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Only workspace admins can approve, reject, or turn policies on and off.")
+    require_admin(user.supabase, workspace_id, user.id, "Only workspace admins can approve, reject, or turn policies on and off.")
 
 
 def _record_event(user: AuthenticatedUser, policy: dict, action: str, note: str = "", self_approved: bool = False) -> None:

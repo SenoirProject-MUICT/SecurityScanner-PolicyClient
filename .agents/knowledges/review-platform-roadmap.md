@@ -13,7 +13,7 @@ The app supports policy/label management, effective date scheduling, email/passw
 | Order | Plan | Current state | Depends on |
 | --- | --- | --- | --- |
 | 1 | [Workspace roles and member management](review-platform-roles-plan.md) | Done in code/mock; production deployment pending | Foundation for all admin/member permissions |
-| 2 | [GitHub/GitLab repository integration](repository-integration-plan.md) | Not implemented | Workspace roles and secure provider credential storage |
+| 2 | [GitHub/GitLab repository integration](repository-integration-plan.md) | GitHub implemented in code and mock mode; production setup and GitLab pending | Workspace roles and secure provider credential storage |
 | 3 | [MR skill findings and vulnerability classifications](mr-skill-review-plan.md) | Not implemented | Repository/MR ingestion and Skill Detection service |
 | 4 | [Review queue and adjustable review time](review-queue-plan.md) | Not implemented | Members, imported MRs, findings, and reviewer assignments |
 | 5 | [Policy approval workflow](policy-approval-plan.md) | Not implemented | Admin role and policy lifecycle/schema changes |

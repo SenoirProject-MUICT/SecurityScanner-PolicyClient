@@ -2,7 +2,16 @@
 
 ## Status
 
-Not implemented. There is no provider authorization flow, repository connection, webhook, pull request / MR persistence, changed-file persistence, or provider API client in this repository.
+GitHub is implemented in application code and mock mode. GitLab is not started. Production use still needs three operator steps: apply `20261022000000_repository_integrations.sql`, create the GitHub App and set the `POLICYDESK_GITHUB_*` settings (see [the backend README](../../apps/backend/README.md)), and schedule the reconciliation job. Nothing has been exercised against live GitHub or a real Supabase database yet.
+
+What was built differs from the design below in these ways:
+
+- The trusted boundary is the FastAPI backend, not Supabase Edge Functions. Callback, webhook, and sync live in `apps/backend/src/policydesk_api` (`integrations/github.py`, `services/repository_connections.py`, `services/repository_sync.py`, `services/github_webhooks.py`, `services/review_requests.py`). Scheduled reconciliation runs as `PYTHONPATH=src .venv/bin/python -m policydesk_api.jobs.reconcile_repositories`.
+- Secrets are `POLICYDESK_GITHUB_*` backend settings, not unprefixed Edge Function secrets.
+- The client follows the current `libs/repositories/{types,api,mock,index,hooks}.ts` and TanStack Query convention. There is no Zustand store or `supabase.ts`.
+- The GitHub App uses "Request user authorization during installation". The API callback is the App's Callback URL, and the OAuth code proves the installing user can access the installation.
+- Integrations and Review Queue are one **Repositories** section (sidebar, above Labels). The list page shows the connection and a card per repository. Each card opens that repository's review queue at `/repositories/:repositoryId`, and pull requests open at `/repositories/:repositoryId/:requestId`. The GitHub callback returns to `/{workspaceId}/repositories`. The queue is a plain list of PRs with a state filter. Assignment and SLA belong to [the review queue plan](review-queue-plan.md).
+- Disconnect removes local rows only. Uninstalling the App stays a GitHub-side action.
 
 ## Dependencies
 

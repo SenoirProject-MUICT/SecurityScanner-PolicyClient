@@ -101,3 +101,8 @@ export function useWorkspaceJoinCodes() {
   const revokeMutation = useMutation({ mutationKey: workspaceMutationKeys.revokeJoinCode(workspaceId), mutationFn: revokeWorkspaceJoinCode.bind(null, workspaceId), onSuccess: () => queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.joinCodes(workspaceId) }) })
   return { codes: codesQuery.data ?? [], isLoading: codesQuery.isPending, error: codesQuery.error instanceof Error ? codesQuery.error.message : '', create: createMutation.mutateAsync, reveal: revealMutation.mutateAsync, isRevealing: revealMutation.isPending, revealingCodeId: revealMutation.variables, revoke: revokeMutation.mutateAsync, isMutating: createMutation.isPending || revokeMutation.isPending }
 }
+
+export function useIsWorkspaceAdmin() {
+  const { workspaces, selectedWorkspaceId, isLoading } = useWorkspaces()
+  return { isAdmin: workspaces.find((workspace) => workspace.id === selectedWorkspaceId)?.role === 'admin', isLoading }
+}

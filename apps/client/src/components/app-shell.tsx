@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate, useNavigation, useOutlet } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Building2, ChevronDown, FileText, LayoutDashboard, LogOut, Settings, Sparkles, Tags, UsersRound } from 'lucide-react'
+import { Building2, ChevronDown, FileText, FolderGit2, LayoutDashboard, LogOut, Settings, Sparkles, Tags, UsersRound } from 'lucide-react'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
 import {
   Sidebar,
@@ -33,6 +33,7 @@ import { BRAND } from '@/constants/brand'
 const navigation = [
   { to: '/', label: 'Overview', end: true, icon: LayoutDashboard },
   { to: '/policies', label: 'Policies', end: false, icon: FileText },
+  { to: '/repositories', label: 'Repositories', end: false, icon: FolderGit2 },
   { to: '/labels', label: 'Labels', end: true, icon: Tags },
   { to: '/team', label: 'Team', end: true, icon: UsersRound },
   { to: '/assistant', label: 'Draft with AI', end: true, icon: Sparkles },
@@ -202,5 +203,6 @@ function getInitials(value: string) { return value.split(/\s+/).slice(0, 2).map(
 function getRouteTitle(pathname: string) {
   const routePath = `/${pathname.split('/').filter(Boolean).slice(1).join('/')}`
   if (routePath.startsWith('/policies/')) return 'Policy details'
+  if (routePath.startsWith('/repositories/')) return routePath.split('/').length > 3 ? 'Pull request' : 'Repository'
   return navigation.find((item) => item.to === routePath)?.label ?? 'Overview'
 }

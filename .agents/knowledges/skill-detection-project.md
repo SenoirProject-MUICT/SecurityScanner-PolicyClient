@@ -72,6 +72,12 @@ Routes:
 - Badge: [apps/client/src/components/policy-label-badge.tsx](../../apps/client/src/components/policy-label-badge.tsx).
 - Labels are managed separately and selected from existing labels in policy forms. Policy rows store label names in a text array. Renaming/removing labels updates policies using those labels in the repository implementations.
 
+### GitHub integration and review queue
+
+- Domain library: [apps/client/src/libs/repositories](../../apps/client/src/libs/repositories/index.ts). It has types, an API repository, a localStorage mock, and TanStack Query hooks.
+- Pages: [Repositories](../../apps/client/src/pages/repositories/page.tsx) at `/:workspaceId/repositories` shows the GitHub connection and a card for each repository. Everyone can open it, and only admins see Connect, Sync, and Disconnect. A card opens [the repository page](../../apps/client/src/pages/repository/page.tsx) at `/:workspaceId/repositories/:repositoryId`, which shows that repository's review queue. [Review detail](../../apps/client/src/pages/review-detail/page.tsx) is at `/:workspaceId/repositories/:repositoryId/:requestId`. Components: `review-queue.tsx`, `repository-connections.tsx`, `repository-connect-card.tsx`, `review-request-card.tsx`, and `changed-files-list.tsx`.
+- Backend: the FastAPI GitHub App client, the install callback, sync, the signed webhook, and reconciliation. Tables are in `20261022000000_repository_integrations.sql`. Status and setup are in [the repository integration plan](repository-integration-plan.md).
+
 ### Dashboard, schedule, charts, and search
 
 - Overview metrics, recent changes, activity chart, current-status chart: [apps/client/src/pages/overview/page.tsx](../../apps/client/src/pages/overview/page.tsx).

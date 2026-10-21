@@ -32,10 +32,6 @@ def delete_policy_row(client: Any, policy_id: str, workspace_id: str) -> None:
     client.table("policies").delete().eq("id", policy_id).eq("workspace_id", workspace_id).execute()
 
 
-def get_membership_row(client: Any, workspace_id: str, user_id: str) -> dict | None:
-    return _maybe_data(client.table("workspace_memberships").select("role,status").eq("workspace_id", workspace_id).eq("user_id", user_id).maybe_single().execute())
-
-
 def count_active_admins(admin: Any, workspace_id: str) -> int:
     rows = admin.table("workspace_memberships").select("id").eq("workspace_id", workspace_id).eq("role", "admin").eq("status", "active").execute().data or []
     return len(rows)

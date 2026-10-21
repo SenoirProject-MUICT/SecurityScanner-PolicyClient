@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -13,6 +14,10 @@ import { useAuthMutations } from '@/libs/auth/hooks'
 import { apiBaseUrl } from '@/libs/api/client'
 import { useRuntimeModeStore } from '@/stores/runtime-mode-store'
 import { BRAND } from '@/constants/brand'
+import { useRepositoryConnections } from '@/libs/repositories/hooks'
+import { useIsWorkspaceAdmin } from '@/libs/workspaces/hooks'
+import { withWorkspaceId } from '@/libs/workspaces/navigation'
+import { useWorkspaceStore } from '@/stores/workspace-store'
 
 const profileSchema = z.object({ name: z.string().trim().min(2, 'Enter a name with at least 2 characters.').max(60, 'Keep your name under 60 characters.') })
 type ProfileValues = z.infer<typeof profileSchema>
@@ -21,6 +26,10 @@ export function SettingsPage() {
   const { user } = useAuth()
   const { updateProfile } = useAuthMutations()
   const isProd = useRuntimeModeStore((state) => state.isProd)
+  const workspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId)
+  const { isAdmin } = useIsWorkspaceAdmin()
+  const { connections, isLoading: isConnectionsLoading } = useRepositoryConnections()
+  const githubAccount = connections[0]?.accountLogin
   const form = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues: { name: user?.name ?? '' } })
 
   useEffect(() => { if (user) form.reset({ name: user.name }) }, [form, user])
@@ -56,6 +65,13 @@ export function SettingsPage() {
           <div className="settings-connection-status"><span className={`status-dot ${isProd ? 'is-connected' : ''}`} /><div><strong>{isProd ? `${BRAND.name} API mode` : 'Local mock mode'}</strong><span>{isProd ? 'Your browser sends requests to the backend. Supabase credentials stay on the server.' : 'Your policies and account stay in this browser for this demo.'}</span></div></div>
           <div className="settings-key-list"><ConnectionRow label="API endpoint" configured={isProd} value={isProd ? apiBaseUrl : undefined} /></div>
           <p className="settings-hint">Configure <code>VITE_API_BASE_URL</code> in <code>apps/client/.env</code> and Supabase server keys in <code>apps/backend/.env</code>.</p>
+        </CardContent>
+      </Card>
+      <Card className="settings-card">
+        <CardHeader className="settings-card-heading"><CardTitle>GitHub</CardTitle><CardDescription>Optional. Import pull requests into the Review Queue.</CardDescription></CardHeader>
+        <CardContent>
+          <div className="settings-connection-status"><span className={`status-dot ${githubAccount ? 'is-connected' : ''}`} /><div><strong>{isConnectionsLoading ? 'Checking connection…' : githubAccount ? `Connected to ${githubAccount}` : 'Not connected'}</strong><span>{githubAccount ? 'Pull requests from your repositories appear in the Review Queue.' : 'Your policy workspace works without GitHub.'}</span></div></div>
+          {isAdmin && <div className="settings-actions"><span /><Button variant="outline" nativeButton={false} render={<Link to={withWorkspaceId('/repositories', workspaceId)} />}>Manage repositories</Button></div>}
         </CardContent>
       </Card>
     </div>
