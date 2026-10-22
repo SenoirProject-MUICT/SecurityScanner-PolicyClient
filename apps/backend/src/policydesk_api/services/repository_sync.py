@@ -49,10 +49,19 @@ def file_values(file: github.ChangedFile) -> dict:
 
 
 def sync_connection(connection: dict) -> None:
-    """Mirror the repositories the installation can see, then sync each one's pull requests."""
+    """Mirror the repositories the installation can see, then sync the linked ones' pull requests."""
     admin, app = get_admin_client(), get_github_app()
     for repository_row in _mirror_repositories(admin, app, connection):
-        _sync_repository(admin, app, connection, repository_row)
+        if repository_row["is_linked"]:
+            _sync_repository(admin, app, connection, repository_row)
+
+
+def sync_repositories(connection: dict, repository_ids: list[str]) -> None:
+    """Import pull requests for repositories that were just linked, without re-reading the installation."""
+    admin, app = get_admin_client(), get_github_app()
+    for repository_row in repository.list_repository_rows(admin, connection["workspace_id"], connection["id"]):
+        if repository_row["is_linked"] and repository_row["id"] in repository_ids:
+            _sync_repository(admin, app, connection, repository_row)
 
 
 def refresh_pull_request(connection: dict, repository_row: dict, number: int) -> None:
@@ -75,7 +84,11 @@ def reconcile_all() -> dict[str, int]:
 
 def _mirror_repositories(admin: Any, app: GitHubApp, connection: dict) -> list[dict]:
     visible = app.list_installation_repositories(connection["installation_id"])
-    rows = repository.upsert_repository_rows(admin, [repository_values(connection, repo) for repo in visible])
+    known = {row["provider_repository_id"] for row in repository.list_repository_rows(admin, connection["workspace_id"], connection["id"])}
+    # The repositories picked while installing are followed; ones that appear later wait in the picker.
+    link_new = not known
+    rows = repository.upsert_repository_rows(admin, [repository_values(connection, repo) for repo in visible if repo.id in known])
+    rows += repository.upsert_repository_rows(admin, [dict(repository_values(connection, repo), is_linked=link_new) for repo in visible if repo.id not in known])
     repository.delete_repositories_except(admin, connection["id"], connection["workspace_id"], [repo.id for repo in visible])
     return rows
 

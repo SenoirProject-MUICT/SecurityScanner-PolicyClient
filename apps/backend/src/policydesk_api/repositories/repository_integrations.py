@@ -62,6 +62,16 @@ def update_repository_row(admin: Any, repository_id: str, workspace_id: str, val
     admin.table("repositories").update(dict(values, updated_at=_now())).eq("id", repository_id).eq("workspace_id", workspace_id).execute()
 
 
+def update_repository_rows(admin: Any, repository_ids: list[str], workspace_id: str, values: dict) -> None:
+    if repository_ids:
+        admin.table("repositories").update(dict(values, updated_at=_now())).in_("id", repository_ids).eq("workspace_id", workspace_id).execute()
+
+
+def delete_request_rows_for_repositories(admin: Any, repository_ids: list[str], workspace_id: str) -> None:
+    if repository_ids:
+        admin.table("merge_requests").delete().in_("repository_id", repository_ids).eq("workspace_id", workspace_id).execute()
+
+
 def list_open_request_repository_ids(client: Any, workspace_id: str) -> list[str]:
     rows = client.table("merge_requests").select("repository_id").eq("workspace_id", workspace_id).eq("state", "open").execute().data or []
     return [row["repository_id"] for row in rows]

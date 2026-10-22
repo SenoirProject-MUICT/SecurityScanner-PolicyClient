@@ -12,6 +12,9 @@ export const apiRepositoryIntegration: RepositoryIntegrationRepository = {
   sync(connectionId, workspaceId) {
     return apiRequest<RepositoryConnection>(`${ApiRoute.repositoryConnections.sync(connectionId)}?${queryString({ workspace_id: workspaceId })}`, { method: HttpMethod.Post })
   },
+  setLinkedRepositories(connectionId, workspaceId, repositoryIds) {
+    return apiRequest<RepositoryConnection>(`${ApiRoute.repositoryConnections.linkedRepositories(connectionId)}?${queryString({ workspace_id: workspaceId })}`, { method: HttpMethod.Put, data: { repositoryIds } })
+  },
   async disconnect(connectionId, workspaceId) {
     await apiRequest<void>(`${ApiRoute.repositoryConnections.item(connectionId)}?${queryString({ workspace_id: workspaceId })}`, { method: HttpMethod.Delete })
   },

@@ -22,7 +22,7 @@ from policydesk_api.services.workspace_access import is_active_admin, require_ad
 logger = logging.getLogger("policydesk.api.repository_connections")
 
 STATE_TTL_SECONDS = 600
-ADMIN_ONLY = "Only workspace admins can connect, sync, or disconnect GitHub."
+ADMIN_ONLY = "Only workspace admins can connect GitHub or manage its repositories."
 CallbackReason = Literal["invalid_state", "expired_state", "not_admin", "installation_not_found", "installation_not_accessible", "already_connected", "github_error"]
 
 
@@ -99,8 +99,31 @@ def sync_connection(user: AuthenticatedUser, workspace_id: str, connection_id: s
         repository_sync.sync_connection(connection)
     except GitHubError as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
+    return list_connection(user, workspace_id, connection_id)
+
+
+def list_connection(user: AuthenticatedUser, workspace_id: str, connection_id: str) -> dict:
     repositories = repository.list_repository_rows(user.supabase, workspace_id, connection_id)
     return _map_connection(_get_connection(user, workspace_id, connection_id), repositories, Counter(repository.list_open_request_repository_ids(user.supabase, workspace_id)))
+
+
+def set_linked_repositories(user: AuthenticatedUser, workspace_id: str, connection_id: str, repository_ids: list[str]) -> tuple[dict, list[str]]:
+    """Follow exactly the given repositories. Returns the connection and the repositories that still need their first import."""
+    require_admin(user.supabase, workspace_id, user.id, ADMIN_ONLY)
+    connection = _get_connection(user, workspace_id, connection_id)
+    if connection["status"] == "suspended":
+        raise HTTPException(status_code=409, detail="This GitHub installation is suspended. Unsuspend it on GitHub, then try again.")
+    admin = get_admin_client()
+    rows = repository.list_repository_rows(admin, workspace_id, connection_id)
+    wanted = set(repository_ids)
+    if wanted - {row["id"] for row in rows}:
+        raise HTTPException(status_code=422, detail="Some of these repositories are no longer available to the GitHub App. Refresh the page and try again.")
+    newly_linked = [row["id"] for row in rows if row["id"] in wanted and not row["is_linked"]]
+    unlinked = [row["id"] for row in rows if row["id"] not in wanted and row["is_linked"]]
+    repository.update_repository_rows(admin, newly_linked, workspace_id, {"is_linked": True, "sync_status": "syncing", "sync_error": None})
+    repository.delete_request_rows_for_repositories(admin, unlinked, workspace_id)
+    repository.update_repository_rows(admin, unlinked, workspace_id, {"is_linked": False, "sync_status": "idle", "sync_error": None, "last_synced_at": None})
+    return connection, newly_linked
 
 
 def disconnect(user: AuthenticatedUser, workspace_id: str, connection_id: str) -> None:
@@ -170,10 +193,11 @@ def _map_connection(row: dict, repositories: list[dict], open_counts: Counter) -
         "id": row["id"], "workspaceId": row["workspace_id"], "provider": row["provider"],
         "installationId": row["installation_id"], "accountLogin": row["account_login"], "accountType": row["account_type"],
         "status": row["status"], "connectedAt": row["created_at"],
+        "manageUrl": get_github_app().installation_settings_url(row["account_login"], row["account_type"], row["installation_id"]),
         "repositories": [{
             "id": repo["id"], "connectionId": repo["connection_id"], "provider": repo["provider"],
             "owner": repo["owner"], "name": repo["name"], "fullName": repo["full_name"], "url": repo["html_url"],
-            "defaultBranch": repo["default_branch"], "isPrivate": repo["is_private"], "syncStatus": repo["sync_status"],
+            "defaultBranch": repo["default_branch"], "isPrivate": repo["is_private"], "isLinked": repo["is_linked"], "syncStatus": repo["sync_status"],
             "syncError": repo.get("sync_error"), "lastSyncedAt": repo.get("last_synced_at"),
             "openRequestCount": open_counts[repo["id"]],
         } for repo in repositories],

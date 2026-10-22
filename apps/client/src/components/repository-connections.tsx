@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { AlertCircle, ChevronRight, GitBranch, LoaderCircle, Lock, RefreshCw, Unplug } from 'lucide-react'
+import { AlertCircle, ChevronRight, GitBranch, LoaderCircle, Lock, Plus, RefreshCw, Unplug } from 'lucide-react'
 import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { LinkRepositoriesDialog } from '@/components/link-repositories-dialog'
 import { RepositoryConnectCard } from '@/components/repository-connect-card'
 import { formatRelative } from '@/libs/repositories/format'
 import { useRepositoryConnectionActions, useRepositoryConnections } from '@/libs/repositories/hooks'
@@ -28,13 +29,14 @@ export function RepositoryConnections() {
   const { connections, isLoading, error } = useRepositoryConnections()
   const { connect, isConnecting, sync, syncingConnectionId, disconnect, isDisconnecting } = useRepositoryConnectionActions()
   const [disconnectTarget, setDisconnectTarget] = useState<RepositoryConnection | null>(null)
+  const [linkTargetId, setLinkTargetId] = useState<string | null>(null)
   const connection = connections[0] ?? null
 
   async function startConnect() {
     try {
       const result = await connect()
       if (result.kind === 'redirect') window.location.assign(result.url)
-      else toast.success('GitHub connected', { description: `${result.connection.repositories.length} repositories are available.` })
+      else toast.success('GitHub connected', { description: `${result.connection.repositories.filter((repository) => repository.isLinked).length} repositories are linked.` })
     } catch (cause) { toast.error('Could not connect GitHub', { description: message(cause) }) }
   }
 
@@ -60,10 +62,12 @@ export function RepositoryConnections() {
       ? <Skeleton className="h-48 w-full" aria-label="Loading connections" />
       : connection
         ? <>
-            <ConnectionPanel connection={connection} isAdmin={isAdmin} isSyncing={syncingConnectionId === connection.id} onSync={() => void runSync(connection)} onDisconnect={() => setDisconnectTarget(connection)} />
-            <RepositoryGrid repositories={connection.repositories} isSyncing={syncingConnectionId === connection.id} />
+            <ConnectionPanel connection={connection} isAdmin={isAdmin} isSyncing={syncingConnectionId === connection.id} onAddRepositories={() => setLinkTargetId(connection.id)} onSync={() => void runSync(connection)} onDisconnect={() => setDisconnectTarget(connection)} />
+            <RepositoryGrid repositories={connection.repositories.filter((repository) => repository.isLinked)} isAdmin={isAdmin} isSyncing={syncingConnectionId === connection.id} onAddRepositories={() => setLinkTargetId(connection.id)} />
           </>
         : <RepositoryConnectCard isAdmin={isAdmin} isConnecting={isConnecting} onConnect={() => void startConnect()} />}
+
+    <LinkRepositoriesDialog connectionId={linkTargetId} onClose={() => setLinkTargetId(null)} />
 
     <AlertDialog open={Boolean(disconnectTarget)} onOpenChange={(open) => { if (!open && !isDisconnecting) setDisconnectTarget(null) }}>
       <AlertDialogContent>
@@ -80,10 +84,10 @@ export function RepositoryConnections() {
   </>
 }
 
-type ConnectionPanelProps = { connection: RepositoryConnection; isAdmin: boolean; isSyncing: boolean; onSync: () => void; onDisconnect: () => void }
+type ConnectionPanelProps = { connection: RepositoryConnection; isAdmin: boolean; isSyncing: boolean; onAddRepositories: () => void; onSync: () => void; onDisconnect: () => void }
 
-function ConnectionPanel({ connection, isAdmin, isSyncing, onSync, onDisconnect }: ConnectionPanelProps) {
-  const lastSynced = latestSync(connection.repositories)
+function ConnectionPanel({ connection, isAdmin, isSyncing, onAddRepositories, onSync, onDisconnect }: ConnectionPanelProps) {
+  const lastSynced = latestSync(connection.repositories.filter((repository) => repository.isLinked))
   return <Card className="mb-6">
     <CardHeader>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -94,7 +98,8 @@ function ConnectionPanel({ connection, isAdmin, isSyncing, onSync, onDisconnect 
             <CardDescription>{connection.accountType === 'Organization' ? 'Organization' : 'Personal account'} · connected {formatRelative(connection.connectedAt)} · {lastSynced ? `last successful sync ${formatRelative(lastSynced)}` : 'not synced yet'}</CardDescription>
           </div>
         </div>
-        {isAdmin && <div className="flex gap-2">
+        {isAdmin && <div className="flex flex-wrap gap-2">
+          <Button className="primary-action" disabled={isSyncing || connection.status !== 'active'} onClick={onAddRepositories}><Plus data-icon="inline-start" />Add repositories</Button>
           <Button variant="outline" disabled={isSyncing} onClick={onSync}>{isSyncing ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <RefreshCw data-icon="inline-start" />}{isSyncing ? 'Syncing…' : 'Sync now'}</Button>
           <Button variant="destructive" disabled={isSyncing} onClick={onDisconnect}><Unplug data-icon="inline-start" />Disconnect</Button>
         </div>}
@@ -108,9 +113,14 @@ export function RepositorySyncBadge({ status }: { status: RepositorySyncStatus }
   return <Badge variant={badge.variant}>{badge.label}</Badge>
 }
 
-function RepositoryGrid({ repositories, isSyncing }: { repositories: ConnectedRepository[]; isSyncing: boolean }) {
+type RepositoryGridProps = { repositories: ConnectedRepository[]; isAdmin: boolean; isSyncing: boolean; onAddRepositories: () => void }
+
+function RepositoryGrid({ repositories, isAdmin, isSyncing, onAddRepositories }: RepositoryGridProps) {
   const workspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId)
-  if (!repositories.length) return <p className="text-sm text-muted-foreground">This installation does not have access to any repositories yet. Add some on GitHub, then sync.</p>
+  if (!repositories.length) return <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+    <p className="text-sm text-muted-foreground">{isAdmin ? 'No repositories are linked to this workspace yet. Add one to start importing its pull requests.' : 'No repositories are linked to this workspace yet. Ask a workspace admin to add some.'}</p>
+    {isAdmin && <Button variant="outline" onClick={onAddRepositories}><Plus data-icon="inline-start" />Add repositories</Button>}
+  </div>
   return <section aria-label="Repositories">
     <h2 className="mb-3 text-sm font-medium text-muted-foreground">Repositories ({repositories.length})</h2>
     <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{repositories.map((repository) => <li key={repository.id}>

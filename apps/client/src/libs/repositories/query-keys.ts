@@ -10,5 +10,6 @@ export const repositoryQueryKeys = {
 export const repositoryMutationKeys = {
   connect: (workspaceId: string) => ['repository-connections', 'connect', workspaceId] as const,
   sync: (workspaceId: string) => ['repository-connections', 'sync', workspaceId] as const,
+  link: (workspaceId: string) => ['repository-connections', 'link', workspaceId] as const,
   disconnect: (workspaceId: string) => ['repository-connections', 'disconnect', workspaceId] as const,
 }

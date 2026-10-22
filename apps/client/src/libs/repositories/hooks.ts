@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { repositoryMutationKeys, repositoryQueryKeys } from './query-keys'
-import { connectGithub, disconnectRepositoryConnection, getReviewRequest, listRepositoryConnections, listReviewRequests, syncRepositoryConnection, type RepositoryConnection, type ReviewRequestFilters } from './index'
+import { connectGithub, disconnectRepositoryConnection, getReviewRequest, listRepositoryConnections, listReviewRequests, setLinkedRepositories, syncRepositoryConnection, type RepositoryConnection, type ReviewRequestFilters } from './index'
 
 const IMPORT_POLL_MS = 3000
 const IMPORT_WINDOW_MS = 2 * 60 * 1000
@@ -13,14 +13,16 @@ function isImporting(connection: RepositoryConnection) {
   return connection.repositories.length === 0 && Date.now() - Date.parse(connection.connectedAt) < IMPORT_WINDOW_MS
 }
 
-export function useRepositoryConnections() {
+/** `watchAccess` keeps the list fresh while an admin may be changing the App's repository access on GitHub in another tab. */
+export function useRepositoryConnections({ watchAccess = false }: { watchAccess?: boolean } = {}) {
   const workspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId)
   const query = useQuery({
     queryKey: repositoryQueryKeys.connections(workspaceId),
     queryFn: () => listRepositoryConnections(workspaceId),
     enabled: Boolean(workspaceId),
-    // The first sync runs on the server after GitHub redirects back, so keep polling until it settles.
-    refetchInterval: (current) => current.state.data?.some(isImporting) ? IMPORT_POLL_MS : false,
+    // Imports run on the server after connecting or linking, so keep polling until they settle.
+    refetchInterval: (current) => watchAccess || current.state.data?.some(isImporting) ? IMPORT_POLL_MS : false,
+    refetchOnWindowFocus: watchAccess ? 'always' : false,
   })
   return {
     connections: query.data ?? [],
@@ -49,6 +51,11 @@ export function useRepositoryConnectionActions() {
     mutationFn: (connectionId: string) => syncRepositoryConnection(connectionId, workspaceId),
     onSettled: refresh,
   })
+  const linkMutation = useMutation({
+    mutationKey: repositoryMutationKeys.link(workspaceId),
+    mutationFn: ({ connectionId, repositoryIds }: { connectionId: string; repositoryIds: string[] }) => setLinkedRepositories(connectionId, workspaceId, repositoryIds),
+    onSettled: refresh,
+  })
   const disconnectMutation = useMutation({
     mutationKey: repositoryMutationKeys.disconnect(workspaceId),
     mutationFn: (connectionId: string) => disconnectRepositoryConnection(connectionId, workspaceId),
@@ -59,6 +66,8 @@ export function useRepositoryConnectionActions() {
     isConnecting: connectMutation.isPending,
     sync: syncMutation.mutateAsync,
     syncingConnectionId: syncMutation.isPending ? syncMutation.variables : null,
+    setLinkedRepositories: linkMutation.mutateAsync,
+    isLinking: linkMutation.isPending,
     disconnect: disconnectMutation.mutateAsync,
     isDisconnecting: disconnectMutation.isPending,
   }

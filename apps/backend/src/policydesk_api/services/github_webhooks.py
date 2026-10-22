@@ -17,7 +17,7 @@ def _handle_pull_request(admin: Any, payload: dict) -> Outcome:
     connection = _connection_for(admin, payload)
     repository_row = repository.get_repository_by_provider_id(admin, (payload.get("repository") or {}).get("id") or 0)
     number = (payload.get("pull_request") or {}).get("number") or payload.get("number")
-    if not connection or connection["status"] != "active" or not repository_row or repository_row["connection_id"] != connection["id"] or not number:
+    if not connection or connection["status"] != "active" or not repository_row or repository_row["connection_id"] != connection["id"] or not repository_row["is_linked"] or not number:
         return "ignored"
     # Event payloads can be stale or partial, so the pull request is always re-read from the API.
     repository_sync.refresh_pull_request(connection, repository_row, int(number))

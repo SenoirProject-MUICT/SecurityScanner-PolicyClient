@@ -12,6 +12,8 @@ export type ConnectedRepository = {
   url: string
   defaultBranch: string
   isPrivate: boolean
+  /** Only linked repositories have their pull requests imported. */
+  isLinked: boolean
   syncStatus: RepositorySyncStatus
   syncError: string | null
   lastSyncedAt: string | null
@@ -27,6 +29,9 @@ export type RepositoryConnection = {
   accountType: 'User' | 'Organization'
   status: RepositoryConnectionStatus
   connectedAt: string
+  /** GitHub's page for choosing which repositories the App can see. */
+  manageUrl: string
+  /** Every repository the App can see, linked or not. */
   repositories: ConnectedRepository[]
 }
 
@@ -94,6 +99,8 @@ export type RepositoryIntegrationRepository = {
   listConnections(workspaceId: string): Promise<RepositoryConnection[]>
   connect(workspaceId: string): Promise<ConnectResult>
   sync(connectionId: string, workspaceId: string): Promise<RepositoryConnection>
+  /** Replaces the linked set: repositories left out are unlinked and their imported pull requests removed. */
+  setLinkedRepositories(connectionId: string, workspaceId: string, repositoryIds: string[]): Promise<RepositoryConnection>
   disconnect(connectionId: string, workspaceId: string): Promise<void>
   listReviewRequests(workspaceId: string, filters: ReviewRequestFilters): Promise<ReviewRequest[]>
   getReviewRequest(id: string, workspaceId: string): Promise<ReviewRequestDetail>

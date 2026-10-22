@@ -27,6 +27,7 @@ export const ApiRoute = {
     collection: '/repository-connections',
     item: (id: string) => `/repository-connections/${encodeURIComponent(id)}`,
     sync: (id: string) => `/repository-connections/${encodeURIComponent(id)}/sync`,
+    linkedRepositories: (id: string) => `/repository-connections/${encodeURIComponent(id)}/linked-repositories`,
   },
   reviewRequests: {
     collection: '/review-requests',

@@ -48,14 +48,14 @@ Workspace join codes are hashed for validation and encrypted for workspace-admin
 - `GET /api/v1/integrations/github/install-url` — returns the GitHub App install URL with a signed, 10-minute `state`. Admins only.
 - `GET /api/v1/integrations/github/callback` — GitHub App Callback URL. Links the installation to the workspace, starts the first sync, and redirects to `{POLICYDESK_APP_BASE_URL}/{workspaceId}/repositories?github=connected` or `?github=error&reason=<code>`.
 - `POST /api/v1/integrations/github/webhook` — signed GitHub webhooks. Deliveries are deduplicated by `X-GitHub-Delivery` and processed after the response.
-- `/api/v1/repository-connections` — list connections with their repositories (members), `POST /{id}/sync` to sync now, and `DELETE /{id}` to disconnect (admins). Disconnecting removes Policy Desk's copy only; uninstall the app on GitHub to revoke its access.
+- `/api/v1/repository-connections` — list connections with every repository the installation can see and whether each is linked (members), `POST /{id}/sync` to sync now, `PUT /{id}/linked-repositories` with `{"repositoryIds": [...]}` to choose which repositories the workspace follows, and `DELETE /{id}` to disconnect (admins). Unlinking a repository deletes its imported pull requests. Disconnecting removes Policy Desk's copy only; uninstall the app on GitHub to revoke its access.
 - `/api/v1/review-requests` and `/api/v1/review-requests/{id}` — imported pull requests and their changed files. `state` defaults to `open`; pass `all` for every state.
 
 The workspace route currently accepts the existing action payload so the UI migration stays small. New API resources should use explicit HTTP operations and resource paths.
 
 ## GitHub repository integration
 
-Apply `20261022000000_repository_integrations.sql` before using the routes above. The API mirrors whichever repositories the GitHub App installation can see, imports their open pull requests with changed files and patches, and keeps them current through webhooks and scheduled reconciliation.
+Apply `20261022000000_repository_integrations.sql` and `20261023000000_repository_linking.sql` before using the routes above. The API mirrors whichever repositories the GitHub App installation can see. Repositories picked while installing are linked; ones the App gains access to later wait unlinked until an admin adds them from **Repositories > Add repositories**. The API imports open pull requests with changed files and patches for linked repositories only, and keeps them current through webhooks and scheduled reconciliation.
 
 To create the GitHub App:
 

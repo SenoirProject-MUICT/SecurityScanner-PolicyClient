@@ -382,6 +382,7 @@ create table if not exists public.repositories (
   html_url text not null,
   default_branch text not null default '',
   is_private boolean not null default false,
+  is_linked boolean not null default true,
   sync_status text not null default 'idle' check (sync_status in ('idle', 'syncing', 'succeeded', 'failed')),
   sync_error text,
   last_synced_at timestamptz,

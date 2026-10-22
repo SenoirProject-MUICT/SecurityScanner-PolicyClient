@@ -16,11 +16,11 @@ export function RepositoryPage() {
   const { repositoryId } = useParams()
   const workspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId)
   const { connections, isLoading, error } = useRepositoryConnections()
-  const repository = connections.flatMap((connection) => connection.repositories).find((item) => item.id === repositoryId)
+  const repository = connections.flatMap((connection) => connection.repositories).find((item) => item.id === repositoryId && item.isLinked)
   const backLink = <Button variant="ghost" size="sm" className="mb-3" nativeButton={false} render={<Link to={withWorkspaceId('/repositories', workspaceId)} />}><ArrowLeft data-icon="inline-start" />Repositories</Button>
 
   if (isLoading) return <>{backLink}<Skeleton className="h-64 w-full" aria-label="Loading repository" /></>
-  if (!repository) return <>{backLink}<Alert variant="destructive"><AlertCircle /><AlertDescription>{error || 'This repository is no longer connected. It may have been removed from the GitHub installation.'}</AlertDescription></Alert></>
+  if (!repository) return <>{backLink}<Alert variant="destructive"><AlertCircle /><AlertDescription>{error || 'This repository is no longer linked to the workspace. An admin may have unlinked it, or removed it from the GitHub installation.'}</AlertDescription></Alert></>
 
   return <>
     {backLink}

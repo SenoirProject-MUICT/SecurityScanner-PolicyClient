@@ -3,7 +3,7 @@ import { getMockWorkspaceAccess } from '@/libs/workspaces/mock'
 import { buildMockRepositories, buildMockRequests, mockAccount, repositoryId } from './mock-fixtures'
 import type { ConnectedRepository, RepositoryConnection, RepositoryIntegrationRepository, ReviewRequest, ReviewRequestDetail } from './types'
 
-const storageKey = 'policy-desk.repositories.v1'
+const storageKey = 'policy-desk.repositories.v2'
 const FAILING_REPOSITORY_INDEX = 2
 const failureMessage = 'GitHub denied access (403). The app lost permission to this repository. Re-open the GitHub App settings and grant access again, then sync.'
 
@@ -43,12 +43,35 @@ export const mockRepositoryIntegration: RepositoryIntegrationRepository = {
     const shouldFail = syncCount % 2 === 1
     const failingId = repositoryId(connectionId, FAILING_REPOSITORY_INDEX)
     const repositories = record.connection.repositories.map((repository): ConnectedRepository => (
-      shouldFail && repository.id === failingId
-        ? { ...repository, syncStatus: 'failed', syncError: failureMessage }
-        : { ...repository, syncStatus: 'succeeded', syncError: null, lastSyncedAt: now }
+      !repository.isLinked ? repository
+        : shouldFail && repository.id === failingId
+          ? { ...repository, syncStatus: 'failed', syncError: failureMessage }
+          : { ...repository, syncStatus: 'succeeded', syncError: null, lastSyncedAt: now }
     ))
     const requests = record.requests.map((request) => request.repositoryId === failingId && shouldFail ? request : { ...request, lastSyncedAt: now })
     const next: MockWorkspaceRecord = { connection: { ...record.connection, repositories }, requests, syncCount }
+    writeStore({ ...store, [workspaceId]: next })
+    return withOpenCounts(next)
+  },
+  async setLinkedRepositories(connectionId, workspaceId, repositoryIds) {
+    await simulateMockLoading()
+    requireAdmin(workspaceId)
+    const store = readStore()
+    const record = store[workspaceId]
+    if (!record || record.connection.id !== connectionId) throw new Error('This connection could not be found. Refresh the page and try again.')
+    const wanted = new Set(repositoryIds)
+    if (repositoryIds.some((id) => !record.connection.repositories.some((repository) => repository.id === id))) {
+      throw new Error('Some of these repositories are no longer available to the GitHub App. Refresh the page and try again.')
+    }
+    const now = new Date().toISOString()
+    const repositories = record.connection.repositories.map((repository): ConnectedRepository => {
+      if (wanted.has(repository.id) === repository.isLinked) return repository
+      return wanted.has(repository.id)
+        ? { ...repository, isLinked: true, syncStatus: 'succeeded', syncError: null, lastSyncedAt: now }
+        : { ...repository, isLinked: false, syncStatus: 'idle', syncError: null, lastSyncedAt: null }
+    })
+    const requests = record.requests.filter((request) => wanted.has(request.repositoryId))
+    const next: MockWorkspaceRecord = { ...record, connection: { ...record.connection, repositories }, requests }
     writeStore({ ...store, [workspaceId]: next })
     return withOpenCounts(next)
   },

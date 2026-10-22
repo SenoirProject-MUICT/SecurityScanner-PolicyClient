@@ -19,29 +19,36 @@ const repositorySeeds = [
   { name: 'policydesk-web', isPrivate: true },
   { name: 'payments-api', isPrivate: true },
   { name: 'infra-config', isPrivate: false },
+  // The App can see these, but the workspace has not linked them, so the picker has something to offer.
+  { name: 'docs-site', isPrivate: false, isLinked: false },
+  { name: 'mobile-app', isPrivate: true, isLinked: false },
 ] as const
 
 const accountLogin = 'acme-labs'
 
 export function buildMockRepositories(connectionId: string, now: string): ConnectedRepository[] {
-  return repositorySeeds.map((seed, index) => ({
-    id: repositoryId(connectionId, index),
-    connectionId,
-    provider: 'github',
-    owner: accountLogin,
-    name: seed.name,
-    fullName: `${accountLogin}/${seed.name}`,
-    url: `https://github.com/${accountLogin}/${seed.name}`,
-    defaultBranch: 'main',
-    isPrivate: seed.isPrivate,
-    syncStatus: 'succeeded',
-    syncError: null,
-    lastSyncedAt: now,
-    openRequestCount: 0,
-  }))
+  return repositorySeeds.map((seed, index) => {
+    const isLinked = !('isLinked' in seed)
+    return {
+      id: repositoryId(connectionId, index),
+      connectionId,
+      provider: 'github',
+      owner: accountLogin,
+      name: seed.name,
+      fullName: `${accountLogin}/${seed.name}`,
+      url: `https://github.com/${accountLogin}/${seed.name}`,
+      defaultBranch: 'main',
+      isPrivate: seed.isPrivate,
+      isLinked,
+      syncStatus: isLinked ? 'succeeded' : 'idle',
+      syncError: null,
+      lastSyncedAt: isLinked ? now : null,
+      openRequestCount: 0,
+    }
+  })
 }
 
-export const mockAccount = { accountLogin, accountType: 'Organization', installationId: 48213907 } as const
+export const mockAccount = { accountLogin, accountType: 'Organization', installationId: 48213907, manageUrl: `https://github.com/organizations/${accountLogin}/settings/installations/48213907` } as const
 
 export function summarizeFiles(files: ChangedFile[]): ChangedFileSummary {
   const count = (status: ChangedFileStatus) => files.filter((file) => file.status === status).length

@@ -155,6 +155,11 @@ class GitHubApp:
     def install_url(self, state: str) -> str:
         return f"{self.web_url}/apps/{self.settings.github_app_slug}/installations/new?{urlencode({'state': state})}"
 
+    def installation_settings_url(self, account_login: str, account_type: str, installation_id: int) -> str:
+        """Where an owner changes which repositories the installation can see."""
+        owner = f"/organizations/{account_login}" if account_type == "Organization" else ""
+        return f"{self.web_url}{owner}/settings/installations/{installation_id}"
+
     def app_jwt(self, now: float | None = None) -> str:
         issued = int(now if now is not None else time.time()) - 60  # tolerate clock drift with GitHub
         payload = {"iat": issued, "exp": issued + 540, "iss": self.settings.github_app_id}
